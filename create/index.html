@@ -975,9 +975,26 @@ function clearDragFeedback(){
   $('palette-delete-hint').classList.add('hidden');
   $('drop-line').classList.add('hidden');
 }
+function rectDistance(x, y, r){
+  const dx = Math.max(r.left - x, 0, x - r.right);
+  const dy = Math.max(r.top - y, 0, y - r.bottom);
+  return Math.hypot(dx, dy);
+}
+function payloadShapeOf(payload){
+  if (payload.kind === 'new') return DEFS[payload.def].shape;
+  const f = findBlock(payload.uid);
+  return f ? DEFS[f.block.def].shape : null;
+}
+function siblingTarget(blkEl, y, r){
+  const found = findBlock(blkEl.dataset.uid);
+  let after = y > r.top + r.height / 2;
+  if (found && DEFS[found.block.def].shape === 'hat') after = true;
+  return { type:'sibling', uid:blkEl.dataset.uid, after, el:blkEl };
+}
 function targetFromPoint(x, y, payload){
   const under = document.elementFromPoint(x, y);
   if (!under || !under.closest) return { type:'none' };
+  const isHat = payloadShapeOf(payload) === 'hat';
   const slotEl = under.closest('[data-slot]');
   if (slotEl && payload.kind === 'new'){
     const d = DEFS[payload.def];
@@ -989,18 +1006,51 @@ function targetFromPoint(x, y, payload){
   }
   const bodyEl = under.closest('[data-body], [data-body2]');
   const blkEl = under.closest('[data-uid]');
-  if (bodyEl && blkEl){
-    const hostUid = bodyEl.dataset.body || bodyEl.dataset.body2;
-    if (blkEl.dataset.uid !== hostUid){
-      const r = blkEl.getBoundingClientRect();
-      return { type:'sibling', uid:blkEl.dataset.uid, after: y > r.top + r.height / 2, el:blkEl };
+  const blkFound = blkEl ? findBlock(blkEl.dataset.uid) : null;
+  const blkTopLevel = blkFound && project.sprites.some(s => s.scripts.some(sc => sc.blocks === blkFound.arr));
+  if (!isHat){
+    if (bodyEl && blkEl){
+      const hostUid = bodyEl.dataset.body || bodyEl.dataset.body2;
+      if (blkEl.dataset.uid !== hostUid){
+        const r = blkEl.getBoundingClientRect();
+        return siblingTarget(blkEl, y, r);
+      }
+      return { type:'body', el:bodyEl };
     }
-    return { type:'body', el:bodyEl };
+    if (bodyEl) return { type:'body', el:bodyEl };
   }
-  if (bodyEl) return { type:'body', el:bodyEl };
-  if (blkEl){
+  if (blkEl && (!isHat || blkTopLevel)){
     const r = blkEl.getBoundingClientRect();
-    return { type:'sibling', uid:blkEl.dataset.uid, after: y > r.top + r.height / 2, el:blkEl };
+    return siblingTarget(blkEl, y, r);
+  }
+  /* Magnetic connecting: within SNAP px of a stack or a C-block mouth,
+     the block snaps to the nearest connection point instead of floating free. */
+  const stackLike = payload.kind === 'move' || (payload.kind === 'new' && ['stack','hat','c'].includes(DEFS[payload.def].shape));
+  if (stackLike){
+    const area = $('codearea');
+    const SNAP = 36;
+    let best = null, bestD = SNAP;
+    area.querySelectorAll('[data-uid]').forEach(el => {
+      if (el.closest('.drag-source')) return;
+      if (isHat){
+        const f = findBlock(el.dataset.uid);
+        if (!f || !project.sprites.some(s => s.scripts.some(sc => sc.blocks === f.arr))) return;
+      }
+      const d = rectDistance(x, y, el.getBoundingClientRect());
+      if (d < bestD){ bestD = d; best = { el }; }
+    });
+    if (!isHat){
+      area.querySelectorAll('[data-body], [data-body2]').forEach(el => {
+        if (el.closest('.drag-source')) return;
+        const d = rectDistance(x, y, el.getBoundingClientRect());
+        if (d < bestD){ bestD = d; best = { body: el }; }
+      });
+    }
+    if (best){
+      if (best.body) return { type:'body', el:best.body };
+      const r = best.el.getBoundingClientRect();
+      return siblingTarget(best.el, y, r);
+    }
   }
   if (under.closest('#codearea')) return { type:'canvas', x, y };
   return { type:'none' };
@@ -1049,7 +1099,7 @@ function resolveDrop(payload, target, ev, area, grabDX, grabDY){
     unit = found.arr.splice(found.idx);
   }
   if (target.type === 'delete'){ renderScripts(); toast('Block deleted.'); return; }
-  if (target.type === 'body'){
+  if (target.type === 'body' && DEFS[unit[0].def].shape !== 'hat'){
     const hostUid = target.el.dataset.body || target.el.dataset.body2;
     const host = findBlock(hostUid);
     if (!host) sprite.scripts.push({ x:40, y:40, blocks:unit });
@@ -1060,8 +1110,19 @@ function resolveDrop(payload, target, ev, area, grabDX, grabDY){
   if (target.type === 'sibling'){
     const found = findBlock(target.uid);
     if (!found){ sprite.scripts.push({ x:40, y:40, blocks:unit }); renderScripts(); return; }
-    found.arr.splice(target.after ? found.idx + 1 : found.idx, 0, ...unit);
-    renderScripts(); return;
+    const targetDef = DEFS[found.block.def];
+    if (DEFS[unit[0].def].shape === 'hat'){
+      const topLevel = sprite.scripts.some(sc => sc.blocks === found.arr);
+      if (topLevel && found.idx === 0 && targetDef.shape !== 'hat'){
+        found.arr.splice(0, 0, ...unit);
+        renderScripts(); return;
+      }
+      /* hats can't join the middle of a stack: float free instead */
+    } else {
+      const insertAt = targetDef.shape === 'hat' ? found.idx + 1 : (target.after ? found.idx + 1 : found.idx);
+      found.arr.splice(insertAt, 0, ...unit);
+      renderScripts(); return;
+    }
   }
   const ar = area.getBoundingClientRect();
   const x = Math.max(0, ev.clientX - grabDX - ar.left + area.scrollLeft);
