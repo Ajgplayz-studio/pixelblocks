@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PixelBlocks — Imagine, Program, Share</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { height:100%; }
+  body { font-family:"Helvetica Neue", Helvetica, Arial, sans-serif; background:#f2f4f7; color:#1d1d1f; }
+  button { font:inherit; cursor:pointer; }
+  input, select, textarea { font:inherit; }
+  .hidden { display:none !important; }
+
+  /* ---------- top navigation (home) ---------- */
+  .topbar { background:#4c97ff; color:#fff; display:flex; align-items:center; gap:22px; padding:0 20px; height:52px; position:sticky; top:0; z-index:50; }
+  .logo { display:flex; align-items:center; gap:8px; font-size:22px; font-weight:800; color:#fff; background:none; border:none; letter-spacing:-.5px; }
+  .logo .brick { font-size:24px; }
+  .navlinks { display:flex; gap:20px; align-items:center; }
+  .navlinks button { background:none; border:none; color:#fff; font-size:15px; font-weight:600; padding:6px 2px; }
+  .navlinks button:hover { text-decoration:underline; }
+  .topbar .spacer { flex:1; }
+  .topbar .join { background:#ff8c1a; color:#fff; border:none; border-radius:20px; padding:7px 16px; font-weight:700; }
+  .topbar .signin { background:none; border:none; color:#fff; font-weight:600; }
+
+  /* ---------- home ---------- */
+  .hero { background:linear-gradient(180deg,#4c97ff,#3b7dd8); color:#fff; text-align:center; padding:52px 20px 44px; }
+  .hero h1 { font-size:40px; line-height:1.15; max-width:640px; margin:0 auto 8px; }
+  .hero p { font-size:19px; opacity:.95; margin-bottom:22px; }
+  .hero .cta { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+  .btn-green { background:#59c059; color:#fff; border:none; border-radius:6px; padding:12px 26px; font-size:17px; font-weight:700; }
+  .btn-green:hover { filter:brightness(1.07); }
+  .btn-ghost { background:rgba(255,255,255,.16); color:#fff; border:1.5px solid rgba(255,255,255,.85); border-radius:6px; padding:11px 24px; font-size:17px; font-weight:700; }
+  .section { max-width:1060px; margin:0 auto; padding:34px 20px 8px; }
+  .section h2 { font-size:24px; margin-bottom:16px; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px; }
+  .card { background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,.12); border:none; text-align:left; padding:0; }
+  .card:hover { box-shadow:0 4px 14px rgba(0,0,0,.18); }
+  .card .thumb { height:132px; display:flex; align-items:center; justify-content:center; font-size:64px; }
+  .card .meta { padding:10px 12px 12px; }
+  .card .meta b { display:block; font-size:15px; }
+  .card .meta span { font-size:13px; color:#666; }
+  .studios { display:flex; gap:14px; flex-wrap:wrap; }
+  .studio { background:#fff; border-radius:8px; padding:16px 18px; box-shadow:0 1px 4px rgba(0,0,0,.12); font-weight:700; border:none; font-size:15px; }
+  .design-strip { background:#9966ff; color:#fff; border-radius:10px; padding:26px; margin-top:10px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+  .design-strip h3 { font-size:22px; margin-bottom:4px; }
+  .footer { max-width:1060px; margin:34px auto 0; padding:20px; color:#777; font-size:13px; border-top:1px solid #ddd; }
+
+  /* ---------- editor shell ---------- */
+  .menubar { background:#4c97ff; color:#fff; display:flex; align-items:center; gap:10px; padding:6px 12px; position:sticky; top:0; z-index:50; flex-wrap:wrap; }
+  .menubar .logo { font-size:19px; }
+  .menubar .projname { background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.35); color:#fff; border-radius:6px; padding:6px 10px; width:210px; }
+  .menubar .projname::placeholder { color:rgba(255,255,255,.75); }
+  .mbtn { background:rgba(255,255,255,.16); color:#fff; border:1px solid rgba(255,255,255,.4); border-radius:6px; padding:6px 12px; font-weight:600; }
+  .mbtn:hover { background:rgba(255,255,255,.28); }
+  .mbtn.share { background:#ff8c1a; border-color:#ff8c1a; font-weight:700; }
+  .editor { display:flex; gap:0; height:calc(100vh - 44px); min-height:560px; }
+  .tabs { display:flex; gap:4px; padding:8px 10px 0; background:#eef1f5; }
+  .tab { border:none; background:#dfe4ea; border-radius:8px 8px 0 0; padding:8px 18px; font-weight:700; color:#444; }
+  .tab.active { background:#fff; color:#111; }
+  .leftcol { width:340px; min-width:300px; background:#fff; border-right:1px solid #ddd; display:flex; flex-direction:column; }
+  .workcol { flex:1; display:flex; flex-direction:column; background:#f2f4f7; min-width:320px; }
+  .catbar { display:flex; flex-wrap:wrap; gap:6px; padding:10px; border-bottom:1px solid #eee; }
+  .catbtn { border:1px solid #ddd; background:#fff; border-radius:20px; padding:5px 11px; font-size:13px; font-weight:700; display:flex; align-items:center; gap:6px; }
+  .catbtn.active { background:#eef4ff; border-color:#4c97ff; }
+  .catdot { width:11px; height:11px; border-radius:50%; flex:none; }
+  .palette { overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:8px; flex:1; }
+  .palette .hint { font-size:13px; color:#777; line-height:1.4; }
+  .codearea { flex:1; overflow:auto; position:relative; padding:16px; }
+  .codearea .drop-hint { position:absolute; top:14px; left:18px; color:#999; font-size:13px; pointer-events:none; }
+  .rightcol { width:500px; min-width:420px; max-width:520px; background:#fff; border-left:1px solid #ddd; display:flex; flex-direction:column; padding:12px; gap:10px; overflow-y:auto; }
+  .stagebar { display:flex; gap:8px; align-items:center; }
+  .flagbtn { width:38px; height:38px; border-radius:50%; border:none; font-size:19px; display:flex; align-items:center; justify-content:center; }
+  .flagbtn.go { background:#59c059; color:#fff; }
+  .flagbtn.stop { background:#e74c3c; color:#fff; border-radius:8px; }
+  .stage-wrap { width:480px; max-width:100%; margin:0 auto; }
+  .stage { position:relative; width:480px; height:360px; max-width:100%; aspect-ratio:4/3; background:#fff; border:1px solid #bbb; border-radius:6px; overflow:hidden; }
+  .stage .coords { position:absolute; right:6px; bottom:4px; font-size:11px; color:#888; pointer-events:none; }
+  .sprite-el { position:absolute; width:70px; height:70px; cursor:pointer; }
+  .sprite-el svg { width:100%; height:100%; display:block; overflow:visible; }
+  .sprite-el.selected { outline:2px dashed #4c97ff; outline-offset:2px; border-radius:6px; }
+  .saybubble { position:absolute; background:#fff; border:2px solid #999; border-radius:10px; padding:6px 10px; font-size:14px; max-width:170px; white-space:pre-wrap; word-break:break-word; pointer-events:none; z-index:5; }
+  .saybubble:after { content:""; position:absolute; bottom:-9px; left:26px; border:5px solid transparent; border-top-color:#999; }
+  .askbar { display:flex; gap:6px; }
+  .askbar input { flex:1; border:1px solid #bbb; border-radius:6px; padding:7px 9px; }
+  .watchers { display:flex; gap:8px; flex-wrap:wrap; }
+  .watcher { background:#ff8c1a; color:#fff; border-radius:5px; padding:4px 9px; font-size:13px; font-weight:700; }
+  .watcher span { font-weight:400; opacity:.9; }
+  .spritepane h3, .backdrop-row h3 { font-size:14px; margin-bottom:6px; color:#444; }
+  .sprites { display:flex; gap:8px; flex-wrap:wrap; }
+  .sprite-tile { border:2px solid #ddd; border-radius:8px; background:#fafafa; padding:6px 8px; min-width:76px; text-align:center; font-size:12px; font-weight:600; }
+  .sprite-tile.selected { border-color:#4c97ff; background:#eef4ff; }
+  .sprite-tile .ic { font-size:30px; display:block; }
+  .sprite-tile button { background:none; border:none; color:#999; font-size:14px; float:right; }
+  .sprite-info { display:flex; gap:8px; flex-wrap:wrap; font-size:13px; color:#555; align-items:center; }
+  .sprite-info input { width:70px; border:1px solid #ccc; border-radius:5px; padding:4px 6px; }
+  .backdrop-row .bds { display:flex; gap:8px; flex-wrap:wrap; }
+  .bd { width:64px; height:44px; border-radius:6px; border:2px solid #ddd; cursor:pointer; }
+  .bd.selected { border-color:#4c97ff; }
+  .costume-list, .sound-list { display:flex; flex-direction:column; gap:8px; padding:12px; overflow-y:auto; }
+  .costume-item, .sound-item { display:flex; align-items:center; gap:10px; border:1px solid #ddd; border-radius:8px; padding:8px 10px; background:#fff; }
+  .costume-item.selected { border-color:#4c97ff; }
+  .costume-item .prev { width:56px; height:56px; flex:none; }
+  .costume-item .prev svg { width:100%; height:100%; }
+  .sound-item button { margin-left:auto; }
+
+  /* ---------- blocks ---------- */
+  .blk { display:inline-flex; align-items:center; gap:5px; color:#fff; font-weight:700; font-size:14px; padding:7px 10px; border-radius:5px; cursor:grab; user-select:none; max-width:100%; flex-wrap:wrap; position:relative; box-shadow:0 1px 2px rgba(0,0,0,.2), inset 0 -2px 0 rgba(0,0,0,.14); }
+  .blk:active { cursor:grabbing; }
+  .blk.stack::before { content:""; position:absolute; left:14px; top:-7px; width:26px; height:7px; background:inherit; clip-path:polygon(0 100%, 16% 0, 84% 0, 100% 100%); z-index:1; }
+  .blk.hat { border-radius:22px 22px 6px 6px; padding-top:10px; }
+  .blk.reporter { border-radius:999px; padding:5px 12px; font-size:13px; }
+  .blk.boolean { padding:5px 17px; font-size:13px; clip-path:polygon(0 50%, 14px 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 14px 100%); }
+  .blk input[type="number"], .blk input[type="text"] { width:44px; border:none; border-radius:9px; padding:3px 7px; font-size:13px; font-weight:700; color:#333; text-align:center; background:rgba(255,255,255,.92); }
+  .blk input[type="text"] { width:76px; text-align:left; }
+  .blk select { border:none; border-radius:9px; padding:3px 4px; font-size:13px; font-weight:700; color:#333; background:rgba(255,255,255,.92); max-width:120px; }
+  .blk .slot { display:inline-flex; align-items:center; background:rgba(255,255,255,.25); border-radius:9px; padding:1px; min-width:30px; min-height:22px; }
+  .blk .slot .blk { box-shadow:none; }
+  .blk .slot .clearslot { background:none; border:none; color:#fff; font-size:13px; padding:0 3px; }
+  .cblk { display:flex; flex-direction:column; gap:0; max-width:100%; }
+  .cblk .cblk-head { border-radius:6px 6px 0 0; }
+  .cblk .cblk-body { min-height:26px; background:rgba(0,0,0,.12); margin-left:14px; padding:6px; display:flex; flex-direction:column; gap:6px; border-radius:0 0 0 6px; }
+  .cblk .cblk-body:empty::after { content:"drop blocks here"; color:rgba(255,255,255,.75); font-size:12px; font-weight:600; padding:2px 4px; }
+  .cblk .cblk-foot { height:12px; border-radius:0 0 6px 6px; margin-left:14px; }
+  .script { position:absolute; display:flex; flex-direction:column; gap:0; }
+  .script .blk { border-radius:0; }
+  .script .blk:first-child { border-radius:6px 6px 0 0; }
+  .script .blk:first-child.hat { border-radius:22px 22px 0 0; }
+  .script > *:last-child { border-radius:0 0 6px 6px; }
+  .script > *:last-child.hat { border-radius:22px 22px 6px 6px; }
+  .script .cblk:last-child .cblk-foot { border-radius:0 0 6px 6px; }
+  .toast { position:fixed; left:50%; bottom:26px; transform:translateX(-50%); background:#333; color:#fff; padding:10px 18px; border-radius:22px; font-size:14px; z-index:200; box-shadow:0 4px 16px rgba(0,0,0,.3); }
+  @media (max-width: 900px) {
+    .editor { flex-direction:column; height:auto; }
+    .leftcol, .rightcol { width:100%; max-width:none; }
+    .stage { width:100%; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ HOME VIEW ============ -->
+<div id="home-view">
+  <header class="topbar">
+    <button class="logo" id="logo-home"><span class="brick">🧱</span>PixelBlocks</button>
+    <nav class="navlinks">
+      <button id="nav-create">Create</button>
+      <button id="nav-explore">Explore</button>
+      <button id="nav-ideas">Ideas</button>
+      <button id="nav-about">About</button>
+    </nav>
+    <div class="spacer"></div>
+    <button class="signin" id="nav-signin">Sign in</button>
+    <button class="join" id="nav-join">Join PixelBlocks</button>
+  </header>
+
+  <section class="hero">
+    <h1>Create stories, games, and animations</h1>
+    <p>Share with others around the world</p>
+    <div class="cta">
+      <button class="btn-green" id="hero-create">Start Creating</button>
+      <button class="btn-ghost" id="hero-join">Join PixelBlocks</button>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Featured Projects</h2>
+    <div class="cards" id="featured-cards"></div>
+  </section>
+
+  <section class="section">
+    <h2>Featured Studios</h2>
+    <div class="studios" id="featured-studios"></div>
+  </section>
+
+  <section class="section">
+    <div class="design-strip">
+      <div>
+        <h3>PixelBlocks Design Studio</h3>
+        <p>Make something with blocks this week and share it with everyone.</p>
+      </div>
+      <button class="btn-ghost" id="studio-go">Visit the studio</button>
+    </div>
+    <div class="footer">PixelBlocks is an original block-coding playground inspired by the idea of Scratch. It is not affiliated with Scratch or MIT. Made with blocks, by block fans.</div>
+  </section>
+</div>
+
+<!-- ============ EDITOR VIEW ============ -->
+<div id="editor-view" class="hidden">
+  <div class="menubar">
+    <button class="logo" id="logo-editor"><span class="brick">🧱</span>PixelBlocks</button>
+    <input class="projname" id="proj-name" placeholder="Untitled project" maxlength="40">
+    <button class="mbtn" id="btn-new">New</button>
+    <button class="mbtn" id="btn-save">Save to computer</button>
+    <button class="mbtn" id="btn-load">Load from computer</button>
+    <input type="file" id="file-load" accept=".json,application/json" class="hidden">
+    <div class="spacer" style="flex:1"></div>
+    <button class="mbtn share" id="btn-share">Share</button>
+    <button class="mbtn" id="btn-home">See project page</button>
+  </div>
+
+  <div class="editor">
+    <div class="leftcol">
+      <div class="tabs">
+        <button class="tab active" data-tab="code">Code</button>
+        <button class="tab" data-tab="costumes">Costumes</button>
+        <button class="tab" data-tab="sounds">Sounds</button>
+      </div>
+      <div id="tab-code">
+        <div class="catbar" id="catbar"></div>
+        <div class="palette" id="palette"></div>
+      </div>
+      <div id="tab-costumes" class="hidden">
+        <div class="costume-list" id="costume-list"></div>
+      </div>
+      <div id="tab-sounds" class="hidden">
+        <div class="sound-list" id="sound-list"></div>
+      </div>
+    </div>
+
+    <div class="workcol">
+      <div class="codearea" id="codearea">
+        <div class="drop-hint" id="drop-hint">Drag blocks here to build a script. Drag a block back to the left to delete it.</div>
+      </div>
+    </div>
+
+    <div class="rightcol">
+      <div class="stagebar">
+        <button class="flagbtn go" id="btn-flag" title="Go (green flag)">▶</button>
+        <button class="flagbtn stop" id="btn-stop" title="Stop all">■</button>
+        <span style="font-size:13px;color:#666">Click ▶ to run. Click a sprite on the stage to run its "when clicked" scripts.</span>
+      </div>
+      <div class="stage-wrap">
+        <div class="stage" id="stage">
+          <div class="coords" id="stage-coords">x: 0 y: 0</div>
+        </div>
+        <div class="askbar hidden" id="askbar">
+          <input id="ask-input" placeholder="Type your answer…">
+          <button class="btn-green" id="ask-ok" style="padding:7px 14px">OK</button>
+        </div>
+      </div>
+      <div class="watchers" id="watchers"></div>
+      <div class="spritepane">
+        <h3>Sprites</h3>
+        <div class="sprites" id="sprites"></div>
+        <div class="sprite-info" id="sprite-info"></div>
+      </div>
+      <div class="backdrop-row">
+        <h3>Backdrop</h3>
+        <div class="bds" id="backdrops"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast-root"></div>
+<script>
+/* ================= DATA ================= */
+const CATS = {
+  motion:    { name:'Motion',    color:'#4c97ff' },
+  looks:     { name:'Looks',     color:'#9966ff' },
+  sound:     { name:'Sound',     color:'#cf63cf' },
+  events:    { name:'Events',    color:'#ffbf00' },
+  control:   { name:'Control',   color:'#ffab19' },
+  sensing:   { name:'Sensing',   color:'#5cb1d6' },
+  operators: { name:'Operators', color:'#59c059' },
+  variables: { name:'Variables', color:'#ff8c1a' },
+  myblocks:  { name:'My Blocks', color:'#ff6680' },
+};
+const KEY_OPTIONS = ['space','up arrow','down arrow','left arrow','right arrow','any','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','0','1','2','3','4','5','6','7','8','9'];
+const SOUND_OPTIONS = ['Meow','Pop','Boing'];
+
+/* Original PixelBlocks art: a blocky orange cat, drawn as inline SVG. */
+function catSVG(mood){
+  const mouth = mood === 'happy'
+    ? '<path d="M40 52 Q47 58 54 52" stroke="#7a4a12" stroke-width="2.5" fill="none" stroke-linecap="round"/>'
+    : '<circle cx="47" cy="55" r="3.5" fill="#7a4a12"/>';
+  const eyes = mood === 'happy'
+    ? '<path d="M32 40 Q37 35 42 40" stroke="#222" stroke-width="2.5" fill="none" stroke-linecap="round"/><path d="M52 40 Q57 35 62 40" stroke="#222" stroke-width="2.5" fill="none" stroke-linecap="round"/>'
+    : '<circle cx="37" cy="40" r="4" fill="#222"/><circle cx="57" cy="40" r="4" fill="#222"/>';
+  const paw = mood === 'happy' ? '<ellipse cx="64" cy="66" rx="7" ry="9" fill="#ff8c1a" transform="rotate(-24 64 66)"/>' : '';
+  return '<svg viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg">'
+    + '<ellipse cx="45" cy="82" rx="26" ry="5" fill="rgba(0,0,0,.12)"/>'
+    + '<path d="M14 30 Q30 66 45 72 Q60 66 76 30 L66 44 Q58 54 45 54 Q32 54 24 44 Z" fill="#ff8c1a"/>'
+    + '<path d="M18 34 L24 12 L36 26 Z" fill="#ff8c1a"/><path d="M72 34 L66 12 L54 26 Z" fill="#ff8c1a"/>'
+    + '<path d="M22 30 L26 17 L33 25 Z" fill="#ffd9a8"/><path d="M68 30 L64 17 L57 25 Z" fill="#ffd9a8"/>'
+    + '<ellipse cx="45" cy="52" rx="27" ry="24" fill="#ff9d2e"/>'
+    + '<ellipse cx="45" cy="60" rx="14" ry="10" fill="#ffd9a8"/>'
+    + eyes + mouth
+    + '<line x1="8" y1="48" x2="26" y2="50" stroke="#e07b00" stroke-width="2" stroke-linecap="round"/>'
+    + '<line x1="8" y1="55" x2="26" y2="54" stroke="#e07b00" stroke-width="2" stroke-linecap="round"/>'
+    + '<line x1="64" y1="50" x2="82" y2="48" stroke="#e07b00" stroke-width="2" stroke-linecap="round"/>'
+    + '<line x1="64" y1="54" x2="82" y2="55" stroke="#e07b00" stroke-width="2" stroke-linecap="round"/>'
+    + paw + '</svg>';
+}
+function starSVG(){
+  return '<svg viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg">'
+    + '<path d="M45 8 L56 34 L84 36 L62 54 L70 82 L45 66 L20 82 L28 54 L6 36 L34 34 Z" fill="#ffbf00" stroke="#e09a00" stroke-width="3" stroke-linejoin="round"/>'
+    + '<circle cx="37" cy="42" r="4" fill="#5a3d00"/><circle cx="53" cy="42" r="4" fill="#5a3d00"/>'
+    + '<path d="M38 52 Q45 58 52 52" stroke="#5a3d00" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>';
+}
+const SPRITE_TYPES = {
+  cat:  { name:'Pixel Cat', icon:'🐱', costumes:[{name:'Pixel Cat', svg:()=>catSVG('calm')},{name:'Pixel Cat Happy', svg:()=>catSVG('happy')}] },
+  star: { name:'Star',      icon:'⭐', costumes:[{name:'Star', svg:starSVG}] },
+};
+const BACKDROPS = [
+  { name:'White',   css:'#ffffff' },
+  { name:'Blue Sky',css:'linear-gradient(#7ec8ff 0 72%, #7ed957 72% 100%)' },
+  { name:'Grid',    css:'#ffffff' },
+  { name:'Night',   css:'radial-gradient(circle at 20% 20%, #fff 1.5px, transparent 2px), radial-gradient(circle at 70% 30%, #fff 1.5px, transparent 2px), radial-gradient(circle at 45% 12%, #fff 1.5px, transparent 2px), radial-gradient(circle at 85% 60%, #fff 1.5px, transparent 2px), linear-gradient(#101230, #2a2a6e)' },
+  { name:'Sunset',  css:'linear-gradient(#ff9d5c 0 55%, #ff5c8a 55% 78%, #7a4a9e 78% 100%)' },
+];
+
+/* ================= BLOCK DEFINITIONS ================= */
+/* shape: stack | hat | reporter | boolean | c (container). inputs: {key, kind, def, options, slotType, literalKind} */
+const DEFS = {};
+function def(d){ DEFS[d.id] = d; return d; }
+
+def({ id:'move', cat:'motion', shape:'stack', label:'move {n} steps', inputs:[{key:'n',kind:'slot',def:10,slotType:'any',literalKind:'number'}],
+  run(s,a){ s.x += Math.cos((s.dir-90)*Math.PI/180) * num(a.n); clampSprite(s); } });
+def({ id:'turnR', cat:'motion', shape:'stack', label:'turn ↻ {n} degrees', inputs:[{key:'n',kind:'slot',def:15,slotType:'any',literalKind:'number'}],
+  run(s,a){ s.dir = normDir(s.dir + num(a.n)); } });
+def({ id:'turnL', cat:'motion', shape:'stack', label:'turn ↺ {n} degrees', inputs:[{key:'n',kind:'slot',def:15,slotType:'any',literalKind:'number'}],
+  run(s,a){ s.dir = normDir(s.dir - num(a.n)); } });
+def({ id:'gotoXY', cat:'motion', shape:'stack', label:'go to x: {x} y: {y}', inputs:[{key:'x',kind:'slot',def:0,slotType:'any',literalKind:'number'},{key:'y',kind:'slot',def:0,slotType:'any',literalKind:'number'}],
+  run(s,a){ s.x = num(a.x); s.y = num(a.y); clampSprite(s); } });
+def({ id:'goto', cat:'motion', shape:'stack', label:'go to {where}', inputs:[{key:'where',kind:'select',def:'random position',options:['random position','mouse-pointer']}],
+  run(s,a){ if(a.where==='random position'){ s.x = Math.round(Math.random()*400-200); s.y = Math.round(Math.random()*300-150); } else { s.x = mouse.x; s.y = mouse.y; } clampSprite(s); } });
+def({ id:'glide', cat:'motion', shape:'stack', label:'glide {secs} secs to x: {x} y: {y}', inputs:[{key:'secs',kind:'slot',def:1,slotType:'any',literalKind:'number'},{key:'x',kind:'slot',def:0,slotType:'any',literalKind:'number'},{key:'y',kind:'slot',def:0,slotType:'any',literalKind:'number'}],
+  async run(s,a,t){ const sx=s.x, sy=s.y, secs=Math.max(0,num(a.secs)), tx=num(a.x), ty=num(a.y), steps=Math.max(1,Math.round(secs*30));
+    for(let i=1;i<=steps;i++){ if(t.dead) return; s.x = sx+(tx-sx)*i/steps; s.y = sy+(ty-sy)*i/steps; clampSprite(s); renderSprite(s); await sleep(1000/30,t); } } });
+def({ id:'pointDir', cat:'motion', shape:'stack', label:'point in direction {d}', inputs:[{key:'d',kind:'slot',def:90,slotType:'any',literalKind:'number'}],
+  run(s,a){ s.dir = normDir(num(a.d)); } });
+def({ id:'changeX', cat:'motion', shape:'stack', label:'change x by {n}', inputs:[{key:'n',kind:'slot',def:10,slotType:'any',literalKind:'number'}],
+  run(s,a){ s.x += num(a.n); clampSprite(s); } });
+def({ id:'setX', cat:'motion', shape:'stack', label:'set x to {n}', inputs:[{key:'n',kind:'slot',def:0,slotType:'any',literalKind:'number'}],
+  run(s,a){ s.x = num(a.n); clampSprite(s); } });
+def({ id:'changeY', cat:'motion', shape:'stack', label:'change y by {n}', inputs:[{key:'n',kind:'slot',def:10,slotType:'any',literalKind:'number'}],
+  run(s,a){ s.y += num(a.n); clampSprite(s); } });
+def({ id:'setY', cat:'motion', shape:'stack', label:'set y to {n}', inputs:[{key:'n',kind:'slot',def:0,slotType:'any',literalKind:'number'}],
+  run(s,a){ s.y = num(a.n); clampSprite(s); } });
+def({ id:'bounce', cat:'motion', shape:'stack', label:'if on edge, bounce', inputs:[],
+  run(s,a){ let b=false; if(s.x>240){s.x=240;b=true;} if(s.x<-240){s.x=-240;b=true;} if(s.y>180){s.y=180;b=true;} if(s.y<-180){s.y=-180;b=true;}
+    if(b){ s.dir = normDir(180 - s.dir); } } });
+def({ id:'xpos', cat:'motion', shape:'reporter', label:'x position', inputs:[], expr(s){ return Math.round(s.x); } });
+def({ id:'ypos', cat:'motion', shape:'reporter', label:'y position', inputs:[], expr(s){ return Math.round(s.y); } });
+def({ id:'dirRep', cat:'motion', shape:'reporter', label:'direction', inputs:[], expr(s){ return Math.round(s.dir); } });
+
+def({ id:'saySecs', cat:'looks', shape:'stack', label:'say {msg} for {secs} secs', inputs:[{key:'msg',kind:'slot',def:'Hello!',slotType:'any',literalKind:'text'},{key:'secs',kind:'slot',def:2,slotType:'any',literalKind:'number'}],
+  async run(s,a,t){ say(s,String(a.msg)); await sleep(num(a.secs)*1000,t); if(!t.dead) say(s,''); } });
+def({ id:'say', cat:'looks', shape:'stack', label:'say {msg}', inputs:[{key:'msg',kind:'slot',def:'Hello!',slotType:'any',literalKind:'text'}],
+  run(s,a){ say(s,String(a.msg)); } });
+def({ id:'thinkSecs', cat:'looks', shape:'stack', label:'think {msg} for {secs} secs', inputs:[{key:'msg',kind:'slot',def:'Hmm…',slotType:'any',literalKind:'text'},{key:'secs',kind:'slot',def:2,slotType:'any',literalKind:'number'}],
+  async run(s,a,t){ say(s,'💭 '+String(a.msg)); await sleep(num(a.secs)*1000,t); if(!t.dead) say(s,''); } });
+def({ id:'think', cat:'looks', shape:'stack', label:'think {msg}', inputs:[{key:'msg',kind:'slot',def:'Hmm…',slotType:'any',literalKind:'text'}],
+  run(s,a){ say(s,'💭 '+String(a.msg)); } });
+def({ id:'show', cat:'looks', shape:'stack', label:'show', inputs:[], run(s){ s.visible=true; } });
+def({ id:'hide', cat:'looks', shape:'stack', label:'hide', inputs:[], run(s){ s.visible=false; } });
+def({ id:'switchCostume', cat:'looks', shape:'stack', label:'switch costume to {c}', inputs:[{key:'c',kind:'select',def:'',options:'costumes'}],
+  run(s,a){ const i = s.costumes.findIndex(c=>c.name===a.c); if(i>=0) s.costume=i; } });
+def({ id:'nextCostume', cat:'looks', shape:'stack', label:'next costume', inputs:[],
+  run(s){ s.costume = (s.costume+1) % s.costumes.length; } });
+def({ id:'changeSize', cat:'looks', shape:'stack', label:'change size by {n}', inputs:[{key:'n',kind:'slot',def:10,slotType:'any',literalKind:'number'}],
+  run(s,a){ s.size = Math.max(10, s.size + num(a.n)); } });
+def({ id:'setSize', cat:'looks', shape:'stack', label:'set size to {n} %', inputs:[{key:'n',kind:'slot',def:100,slotType:'any',literalKind:'number'}],
+  run(s,a){ s.size = Math.max(10, num(a.n)); } });
+def({ id:'sizeRep', cat:'looks', shape:'reporter', label:'size', inputs:[], expr(s){ return Math.round(s.size); } });
+def({ id:'switchBackdrop', cat:'looks', shape:'stack', label:'switch backdrop to {b}', inputs:[{key:'b',kind:'select',def:'Blue Sky',options:'backdrops'}],
+  run(s,a){ setBackdrop(a.b); } });
+def({ id:'nextBackdrop', cat:'looks', shape:'stack', label:'next backdrop', inputs:[],
+  run(){ const i = BACKDROPS.findIndex(b=>b.name===project.backdrop); setBackdrop(BACKDROPS[(i+1)%BACKDROPS.length].name); } });
+
+def({ id:'playSound', cat:'sound', shape:'stack', label:'play sound {snd}', inputs:[{key:'snd',kind:'select',def:'Meow',options:SOUND_OPTIONS}],
+  run(s,a){ playSound(a.snd,false); } });
+def({ id:'playSoundDone', cat:'sound', shape:'stack', label:'play sound {snd} until done', inputs:[{key:'snd',kind:'select',def:'Meow',options:SOUND_OPTIONS}],
+  async run(s,a,t){ await playSound(a.snd,true,t); } });
+def({ id:'stopSounds', cat:'sound', shape:'stack', label:'stop all sounds', inputs:[], run(){ stopAllSounds(); } });
+
+def({ id:'hatFlag', cat:'events', shape:'hat', label:'when 🏳 green flag clicked', inputs:[], hat:'flag' });
+def({ id:'hatKey', cat:'events', shape:'hat', label:'when {key} key pressed', inputs:[{key:'key',kind:'select',def:'space',options:KEY_OPTIONS}], hat:'key' });
+def({ id:'hatClick', cat:'events', shape:'hat', label:'when this sprite clicked', inputs:[], hat:'click' });
+def({ id:'hatReceive', cat:'events', shape:'hat', label:'when I receive {msg}', inputs:[{key:'msg',kind:'text',def:'message1'}], hat:'receive' });
+def({ id:'broadcast', cat:'events', shape:'stack', label:'broadcast {msg}', inputs:[{key:'msg',kind:'text',def:'message1'}],
+  run(s,a){ fireBroadcast(String(a.msg), false); } });
+def({ id:'broadcastWait', cat:'events', shape:'stack', label:'broadcast {msg} and wait', inputs:[{key:'msg',kind:'text',def:'message1'}],
+  async run(s,a,t){ await fireBroadcast(String(a.msg), true, t); } });
+
+def({ id:'wait', cat:'control', shape:'stack', label:'wait {secs} secs', inputs:[{key:'secs',kind:'slot',def:1,slotType:'any',literalKind:'number'}],
+  async run(s,a,t){ await sleep(num(a.secs)*1000,t); } });
+def({ id:'repeat', cat:'control', shape:'c', label:'repeat {n}', inputs:[{key:'n',kind:'slot',def:10,slotType:'any',literalKind:'number'}],
+  async run(s,a,t,runKids){ const n=Math.max(0,Math.round(num(a.n))); for(let i=0;i<n;i++){ if(t.dead) return; await runKids(); } } });
+def({ id:'forever', cat:'control', shape:'c', label:'forever', inputs:[],
+  async run(s,a,t,runKids){ while(!t.dead){ await runKids(); await sleep(0,t); } } });
+def({ id:'ifThen', cat:'control', shape:'c', label:'if {cond} then', inputs:[{key:'cond',kind:'slot',def:false,slotType:'boolean',literalKind:'bool'}],
+  async run(s,a,t,runKids){ if(truthy(a.cond)) await runKids(); } });
+def({ id:'ifElse', cat:'control', shape:'c', elseKids:true, label:'if {cond} then', inputs:[{key:'cond',kind:'slot',def:false,slotType:'boolean',literalKind:'bool'}],
+  async run(s,a,t,runKids,runElse){ if(truthy(a.cond)) await runKids(); else await runElse(); } });
+def({ id:'waitUntil', cat:'control', shape:'stack', label:'wait until {cond}', inputs:[{key:'cond',kind:'slot',def:false,slotType:'boolean',literalKind:'bool'}],
+  async run(s,a,t){ while(!t.dead && !truthy(a.cond)) await sleep(30,t); } });
+def({ id:'repeatUntil', cat:'control', shape:'c', label:'repeat until {cond}', inputs:[{key:'cond',kind:'slot',def:false,slotType:'boolean',literalKind:'bool'}],
+  async run(s,a,t,runKids){ while(!t.dead && !truthy(a.cond)){ await runKids(); } } });
+def({ id:'stop', cat:'control', shape:'stack', label:'stop {what}', inputs:[{key:'what',kind:'select',def:'all',options:[['all','all'],['this script','this']]}],
+  run(s,a,t){ if(a.what==='all') stopAll(); else t.dead = true; } });
+
+def({ id:'touching', cat:'sensing', shape:'boolean', label:'touching {what}?', inputs:[{key:'what',kind:'select',def:'mouse-pointer',options:'touching'}],
+  expr(s,a){ if(a.what==='mouse-pointer') return dist(s.x,s.y,mouse.x,mouse.y) < 45;
+    if(a.what==='edge') return s.x>=238||s.x<=-238||s.y>=178||s.y<=-178;
+    const o = project.sprites.find(p=>p.name===a.what); return o ? dist(s.x,s.y,o.x,o.y) < 50 : false; } });
+def({ id:'keyPressed', cat:'sensing', shape:'boolean', label:'key {key} pressed?', inputs:[{key:'key',kind:'select',def:'space',options:KEY_OPTIONS}],
+  expr(s,a){ return keysDown.has(keyToCode(a.key)) || (a.key==='any' && keysDown.size>0); } });
+def({ id:'mouseDown', cat:'sensing', shape:'boolean', label:'mouse down?', inputs:[], expr(){ return mouse.down; } });
+def({ id:'mouseX', cat:'sensing', shape:'reporter', label:'mouse x', inputs:[], expr(){ return Math.round(mouse.x); } });
+def({ id:'mouseY', cat:'sensing', shape:'reporter', label:'mouse y', inputs:[], expr(){ return Math.round(mouse.y); } });
+def({ id:'ask', cat:'sensing', shape:'stack', label:'ask {q} and wait', inputs:[{key:'q',kind:'slot',def:"What's your name?",slotType:'any',literalKind:'text'}],
+  async run(s,a,t){ const ans = await askOnStage(String(a.q), t); if(!t.dead) lastAnswer = ans; } });
+def({ id:'answer', cat:'sensing', shape:'reporter', label:'answer', inputs:[], expr(){ return lastAnswer; } });
+
+def({ id:'add', cat:'operators', shape:'reporter', label:'{a} + {b}', inputs:[{key:'a',kind:'slot',def:'',slotType:'any',literalKind:'text'},{key:'b',kind:'slot',def:'',slotType:'any',literalKind:'text'}], expr(s,a){ return num(a.a)+num(a.b); } });
+def({ id:'sub', cat:'operators', shape:'reporter', label:'{a} - {b}', inputs:[{key:'a',kind:'slot',def:'',slotType:'any',literalKind:'text'},{key:'b',kind:'slot',def:'',slotType:'any',literalKind:'text'}], expr(s,a){ return num(a.a)-num(a.b); } });
+def({ id:'mul', cat:'operators', shape:'reporter', label:'{a} * {b}', inputs:[{key:'a',kind:'slot',def:'',slotType:'any',literalKind:'text'},{key:'b',kind:'slot',def:'',slotType:'any',literalKind:'text'}], expr(s,a){ return num(a.a)*num(a.b); } });
+def({ id:'div', cat:'operators', shape:'reporter', label:'{a} / {b}', inputs:[{key:'a',kind:'slot',def:'',slotType:'any',literalKind:'text'},{key:'b',kind:'slot',def:'',slotType:'any',literalKind:'text'}], expr(s,a){ return num(a.b)===0 ? 0 : num(a.a)/num(a.b); } });
+def({ id:'random', cat:'operators', shape:'reporter', label:'pick random {a} to {b}', inputs:[{key:'a',kind:'slot',def:1,slotType:'any',literalKind:'number'},{key:'b',kind:'slot',def:10,slotType:'any',literalKind:'number'}], expr(s,a){ const lo=Math.min(num(a.a),num(a.b)), hi=Math.max(num(a.a),num(a.b)); return Math.floor(Math.random()*(hi-lo+1))+lo; } });
+def({ id:'gt', cat:'operators', shape:'boolean', label:'{a} > {b}', inputs:[{key:'a',kind:'slot',def:'',slotType:'any',literalKind:'text'},{key:'b',kind:'slot',def:'',slotType:'any',literalKind:'text'}], expr(s,a){ return cmp(a.a) > cmp(a.b); } });
+def({ id:'lt', cat:'operators', shape:'boolean', label:'{a} < {b}', inputs:[{key:'a',kind:'slot',def:'',slotType:'any',literalKind:'text'},{key:'b',kind:'slot',def:'',slotType:'any',literalKind:'text'}], expr(s,a){ return cmp(a.a) < cmp(a.b); } });
+def({ id:'eq', cat:'operators', shape:'boolean', label:'{a} = {b}', inputs:[{key:'a',kind:'slot',def:'',slotType:'any',literalKind:'text'},{key:'b',kind:'slot',def:'',slotType:'any',literalKind:'text'}], expr(s,a){ return String(a.a).toLowerCase() === String(a.b).toLowerCase(); } });
+def({ id:'andOp', cat:'operators', shape:'boolean', label:'{a} and {b}', inputs:[{key:'a',kind:'slot',def:false,slotType:'boolean',literalKind:'bool'},{key:'b',kind:'slot',def:false,slotType:'boolean',literalKind:'bool'}], expr(s,a){ return truthy(a.a) && truthy(a.b); } });
+def({ id:'orOp', cat:'operators', shape:'boolean', label:'{a} or {b}', inputs:[{key:'a',kind:'slot',def:false,slotType:'boolean',literalKind:'bool'},{key:'b',kind:'slot',def:false,slotType:'boolean',literalKind:'bool'}], expr(s,a){ return truthy(a.a) || truthy(a.b); } });
+def({ id:'notOp', cat:'operators', shape:'boolean', label:'not {c}', inputs:[{key:'c',kind:'slot',def:false,slotType:'boolean',literalKind:'bool'}], expr(s,a){ return !truthy(a.c); } });
+def({ id:'join', cat:'operators', shape:'reporter', label:'join {a} {b}', inputs:[{key:'a',kind:'slot',def:'apple ',slotType:'any',literalKind:'text'},{key:'b',kind:'slot',def:'banana',slotType:'any',literalKind:'text'}], expr(s,a){ return String(a.a)+String(a.b); } });
+def({ id:'letterOf', cat:'operators', shape:'reporter', label:'letter {n} of {text}', inputs:[{key:'n',kind:'slot',def:1,slotType:'any',literalKind:'number'},{key:'text',kind:'slot',def:'apple',slotType:'any',literalKind:'text'}], expr(s,a){ const t=String(a.text), i=Math.round(num(a.n))-1; return t[i] || ''; } });
+def({ id:'lengthOf', cat:'operators', shape:'reporter', label:'length of {text}', inputs:[{key:'text',kind:'slot',def:'apple',slotType:'any',literalKind:'text'}], expr(s,a){ return String(a.text).length; } });
+def({ id:'modOp', cat:'operators', shape:'reporter', label:'{a} mod {b}', inputs:[{key:'a',kind:'slot',def:'',slotType:'any',literalKind:'text'},{key:'b',kind:'slot',def:'',slotType:'any',literalKind:'text'}], expr(s,a){ return num(a.b)===0 ? 0 : ((num(a.a)%num(a.b))+num(a.b))%num(a.b); } });
+def({ id:'roundOp', cat:'operators', shape:'reporter', label:'round {n}', inputs:[{key:'n',kind:'slot',def:'',slotType:'any',literalKind:'text'}], expr(s,a){ return Math.round(num(a.n)); } });
+
+def({ id:'setVar', cat:'variables', shape:'stack', label:'set {v} to {val}', inputs:[{key:'v',kind:'select',def:'',options:'vars'},{key:'val',kind:'slot',def:0,slotType:'any',literalKind:'number'}],
+  run(s,a){ if(a.v) { project.vars[a.v].value = a.val; renderWatchers(); } } });
+def({ id:'changeVar', cat:'variables', shape:'stack', label:'change {v} by {n}', inputs:[{key:'v',kind:'select',def:'',options:'vars'},{key:'n',kind:'slot',def:1,slotType:'any',literalKind:'number'}],
+  run(s,a){ if(a.v) { project.vars[a.v].value = num(project.vars[a.v].value) + num(a.n); renderWatchers(); } } });
+def({ id:'showVar', cat:'variables', shape:'stack', label:'show variable {v}', inputs:[{key:'v',kind:'select',def:'',options:'vars'}],
+  run(s,a){ if(a.v) { project.vars[a.v].shown = true; renderWatchers(); } } });
+def({ id:'hideVar', cat:'variables', shape:'stack', label:'hide variable {v}', inputs:[{key:'v',kind:'select',def:'',options:'vars'}],
+  run(s,a){ if(a.v) { project.vars[a.v].shown = false; renderWatchers(); } } });
+def({ id:'varRep', cat:'variables', shape:'reporter', label:'{v}', inputs:[{key:'v',kind:'select',def:'',options:'vars'}],
+  expr(s,a){ return a.v && project.vars[a.v] ? project.vars[a.v].value : 0; } });
+
+const PALETTE_ORDER = {
+  motion:['move','turnR','turnL','goto','gotoXY','glide','pointDir','changeX','setX','changeY','setY','bounce','xpos','ypos','dirRep'],
+  looks:['saySecs','say','thinkSecs','think','show','hide','switchCostume','nextCostume','changeSize','setSize','sizeRep','switchBackdrop','nextBackdrop'],
+  sound:['playSound','playSoundDone','stopSounds'],
+  events:['hatFlag','hatKey','hatClick','hatReceive','broadcast','broadcastWait'],
+  control:['wait','repeat','forever','ifThen','ifElse','waitUntil','repeatUntil','stop'],
+  sensing:['touching','keyPressed','mouseDown','mouseX','mouseY','ask','answer'],
+  operators:['add','sub','mul','div','random','gt','lt','eq','andOp','orOp','notOp','join','letterOf','lengthOf','modOp','roundOp'],
+  variables:['setVar','changeVar','showVar','hideVar','varRep'],
+  myblocks:[],
+};
+
+/* ================= SAMPLE PROJECTS (featured cards) ================= */
+function blk(id, vals, kids, kids2){ return { uid:nextUid(), def:id, vals:vals||{}, kids:kids||[], kids2:kids2||[] }; }
+const SAMPLES = [
+  { title:'Cat Dance', author:'pixelcat', emoji:'🐱', bg:'linear-gradient(135deg,#4c97ff,#9966ff)',
+    build(){
+      const dance = [ blk('hatFlag'), blk('repeat', { n:10 }, [ blk('move', { n:20 }), blk('turnR', { n:36 }), blk('nextCostume'), blk('wait', { secs:0.2 }) ]) ];
+      return { backdrop:'Blue Sky', vars:{}, sprites:[ spriteOf('cat', 0, 0, [ dance ]) ] };
+    } },
+  { title:'Star Catch', author:'starchaser', emoji:'⭐', bg:'linear-gradient(135deg,#ffbf00,#ff8c1a)',
+    build(){
+      const catScript = [ blk('hatFlag'), blk('saySecs', { msg:'Click the star!', secs:2 }) ];
+      const starLoop = [ blk('hatFlag'), blk('forever', {}, [ blk('goto', { where:'random position' }), blk('wait', { secs:1 }) ]) ];
+      const starClick = [ blk('hatClick'), blk('saySecs', { msg:'Caught!', secs:1 }), blk('changeVar', { v:'score', n:1 }), blk('goto', { where:'random position' }) ];
+      return { backdrop:'Night', vars:{ score:{ value:0, shown:true } }, sprites:[
+        spriteOf('cat', -150, -100, [ catScript ]),
+        spriteOf('star', 80, 40, [ starLoop, starClick ]),
+      ] };
+    } },
+  { title:'Talking Cat', author:'chatty', emoji:'💬', bg:'linear-gradient(135deg,#59c059,#5cb1d6)',
+    build(){
+      const talk = [ blk('hatFlag'),
+        blk('saySecs', { msg:'Hello!', secs:2 }),
+        blk('ask', { q:"What's your name?" }),
+        blk('saySecs', { msg:{ rep:'join', vals:{ a:'Hi, ', b:{ rep:'answer', vals:{} } } }, secs:2 }) ];
+      return { backdrop:'Blue Sky', vars:{}, sprites:[ spriteOf('cat', 0, 0, [ talk ]) ] };
+    } },
+];
+const STUDIOS = ['Block Builders', 'Game Makers Club', 'Animation Station', 'Music & Meows'];
+
+/* ================= STATE & HELPERS ================= */
+let _uid = 1;
+function nextUid(){ return 'b' + (_uid++); }
+let project = null;
+let selectedId = null;
+let activeCat = 'motion';
+let lastAnswer = '';
+let mouse = { x:0, y:0, down:false };
+let keysDown = new Set();
+let runTokens = new Set();
+let spriteSeq = 1;
+
+function num(v){ const n = parseFloat(v); return isNaN(n) ? 0 : n; }
+function truthy(v){ if (typeof v === 'string') return v !== '' && v !== '0' && v.toLowerCase() !== 'false'; return !!v; }
+function cmp(v){ if (v == null) return ''; const s = String(v); return (s.trim() !== '' && !isNaN(Number(s))) ? Number(s) : s.toLowerCase(); }
+function normDir(d){ while (d > 180) d -= 360; while (d <= -180) d += 360; return d; }
+function clampSprite(s){ s.x = Math.max(-1000, Math.min(1000, s.x)); s.y = Math.max(-1000, Math.min(1000, s.y)); }
+function dist(x1,y1,x2,y2){ return Math.hypot(x2-x1, y2-y1); }
+function keyToCode(k){ return { 'space':' ', 'up arrow':'ArrowUp', 'down arrow':'ArrowDown', 'left arrow':'ArrowLeft', 'right arrow':'ArrowRight' }[k] || k; }
+function sleep(ms, t){ return new Promise(res => { const end = Date.now() + Math.max(0, ms||0);
+  (function chk(){ if (!t || t.dead || Date.now() >= end) res(); else setTimeout(chk, Math.min(25, end - Date.now())); })(); }); }
+
+function spriteOf(type, x, y, scriptArrays){
+  const t = SPRITE_TYPES[type];
+  const scripts = (scriptArrays || []).map((blocks, i) => ({ x: 24 + i*36, y: 20 + i*36, blocks: blocks || [] }));
+  return { id:'s'+(spriteSeq++), name: t.name + (spriteSeq>2 ? ' '+(spriteSeq-1) : ''), type, costumes: t.costumes, costume:0,
+    x:x||0, y:y||0, dir:90, size:100, visible:true, say:'', scripts, el:null, sayEl:null };
+}
+function selectedSprite(){ return project.sprites.find(s => s.id === selectedId) || project.sprites[0]; }
+function freshInstance(defId){
+  const d = DEFS[defId]; const vals = {};
+  for (const inp of d.inputs || []){
+    if (inp.kind === 'slot') vals[inp.key] = inp.def;
+    else if (inp.kind === 'select') vals[inp.key] = inp.def;
+    else vals[inp.key] = inp.def;
+  }
+  return { uid: nextUid(), def: defId, vals, kids:[], kids2:[] };
+}
+function resolveOptions(inp, sprite){
+  let o = inp.options;
+  if (o === 'costumes') return (sprite ? sprite.costumes : []).map(c => [c.name, c.name]);
+  if (o === 'backdrops') return BACKDROPS.map(b => [b.name, b.name]);
+  if (o === 'vars') { const k = Object.keys(project.vars); return k.length ? k.map(v => [v, v]) : [['', '(no variables yet)']]; }
+  if (o === 'touching') return ['mouse-pointer', 'edge'].concat(project.sprites.map(s => s.name)).map(v => [v, v]);
+  return (o || []).map(v => Array.isArray(v) ? v : [v, v]);
+}
+function toast(msg){
+  const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
+  document.getElementById('toast-root').appendChild(t);
+  setTimeout(() => t.remove(), 2600);
+}
+function $(id){ return document.getElementById(id); }
+
+/* ================= RENDERING ================= */
+function renderCatBar(){
+  const bar = $('catbar'); bar.innerHTML = '';
+  for (const key of Object.keys(CATS)){
+    const c = CATS[key];
+    const b = document.createElement('button');
+    b.className = 'catbtn' + (activeCat === key ? ' active' : '');
+    b.innerHTML = '<span class="catdot" style="background:' + c.color + '"></span>' + c.name;
+    b.onclick = () => { activeCat = key; renderCatBar(); renderPalette(); };
+    bar.appendChild(b);
+  }
+}
+function renderPalette(){
+  const pal = $('palette'); pal.innerHTML = '';
+  if (activeCat === 'variables'){
+    const mk = document.createElement('button');
+    mk.className = 'mbtn'; mk.style.cssText = 'background:#ff8c1a;border-color:#ff8c1a;color:#fff';
+    mk.textContent = 'Make a Variable';
+    mk.onclick = () => {
+      const name = prompt('New variable name:');
+      if (name && name.trim() && !project.vars[name.trim()]){
+        project.vars[name.trim()] = { value: 0, shown: true };
+        renderPalette(); renderWatchers();
+      }
+    };
+    pal.appendChild(mk);
+    if (!Object.keys(project.vars).length){
+      const h = document.createElement('div'); h.className = 'hint';
+      h.textContent = 'Make a variable to store things like a score, then use the blocks below.';
+      pal.appendChild(h);
+    }
+  }
+  if (activeCat === 'myblocks'){
+    const h = document.createElement('div'); h.className = 'hint';
+    h.textContent = 'Custom blocks are coming soon. For now, build with the other categories — they all work.';
+    pal.appendChild(h);
+    return;
+  }
+  for (const defId of (PALETTE_ORDER[activeCat] || [])){
+    const inst = freshInstance(defId);
+    pal.appendChild(buildBlockEl(inst, { palette:true }));
+  }
+}
+function inputControl(inp, inst, sprite){
+  if (inp.kind === 'number' || inp.kind === 'text'){
+    const el = document.createElement('input');
+    el.type = inp.kind; el.value = inst.vals[inp.key];
+    el.addEventListener('input', e => { inst.vals[inp.key] = inp.kind === 'number' ? e.target.value : e.target.value; });
+    el.addEventListener('mousedown', e => e.stopPropagation());
+    el.addEventListener('dragstart', e => { e.preventDefault(); e.stopPropagation(); });
+    return el;
+  }
+  if (inp.kind === 'select'){
+    const el = document.createElement('select');
+    for (const [v, label] of resolveOptions(inp, sprite)){
+      const o = document.createElement('option'); o.value = v; o.textContent = label; el.appendChild(o);
+    }
+    el.value = inst.vals[inp.key];
+    if (![...el.options].some(o => o.value === String(el.value))) el.selectedIndex = 0;
+    inst.vals[inp.key] = el.value;
+    el.addEventListener('change', e => { inst.vals[inp.key] = e.target.value; });
+    el.addEventListener('mousedown', e => e.stopPropagation());
+    el.addEventListener('dragstart', e => { e.preventDefault(); e.stopPropagation(); });
+    return el;
+  }
+  /* slot: literal input, or a dropped reporter chip */
+  const slot = document.createElement('span');
+  slot.className = 'slot';
+  const v = inst.vals[inp.key];
+  if (v && typeof v === 'object' && v.rep){
+    const chip = buildBlockEl({ uid:'rep', def:v.rep, vals:v.vals, kids:[], kids2:[] }, { mini:true, sprite });
+    slot.appendChild(chip);
+    const x = document.createElement('button'); x.className = 'clearslot'; x.textContent = '×'; x.title = 'Remove';
+    x.onclick = e => { e.stopPropagation(); inst.vals[inp.key] = inp.def; renderScripts(); };
+    slot.appendChild(x);
+  } else {
+    const el = document.createElement('input');
+    el.type = inp.literalKind === 'text' ? 'text' : 'number';
+    if (inp.literalKind === 'bool'){
+      const sel = document.createElement('select');
+      sel.innerHTML = '<option value="false">false</option><option value="true">true</option>';
+      sel.value = String(!!v);
+      sel.addEventListener('change', e => { inst.vals[inp.key] = e.target.value === 'true'; });
+      sel.addEventListener('mousedown', e => e.stopPropagation());
+      slot.appendChild(sel);
+    } else {
+      el.value = v;
+      el.addEventListener('input', e => { inst.vals[inp.key] = el.type === 'number' ? e.target.value : e.target.value; });
+      el.addEventListener('mousedown', e => e.stopPropagation());
+      el.addEventListener('dragstart', e => { e.preventDefault(); e.stopPropagation(); });
+      slot.appendChild(el);
+    }
+  }
+  if (!slot.dataset) slot.dataset = {};
+  return slot;
+}
+function buildBlockEl(inst, opts){
+  opts = opts || {};
+  const d = DEFS[inst.def];
+  const sprite = opts.sprite || selectedSprite();
+  const cat = CATS[d.cat];
+  let el;
+  if (d.shape === 'c'){
+    el = document.createElement('div'); el.className = 'cblk';
+    const head = document.createElement('div');
+    head.className = 'blk stack';
+    head.style.background = cat.color;
+    head.appendChild(labelParts(d, inst, sprite));
+    el.appendChild(head);
+    const body = document.createElement('div'); body.className = 'cblk-body'; body.style.background = shade(cat.color);
+    body.dataset.body = inst.uid;
+    for (const k of inst.kids) body.appendChild(buildBlockEl(k, opts));
+    el.appendChild(body);
+    if (d.elseKids){
+      const elseLip = document.createElement('div');
+      elseLip.className = 'blk'; elseLip.style.background = cat.color; elseLip.textContent = 'else';
+      el.appendChild(elseLip);
+      const body2 = document.createElement('div'); body2.className = 'cblk-body'; body2.style.background = shade(cat.color);
+      body2.dataset.body2 = inst.uid;
+      for (const k of inst.kids2) body2.appendChild(buildBlockEl(k, opts));
+      el.appendChild(body2);
+    }
+    const foot = document.createElement('div'); foot.className = 'cblk-foot'; foot.style.background = cat.color;
+    el.appendChild(foot);
+  } else {
+    el = document.createElement('div');
+    el.className = 'blk' + (d.shape === 'hat' ? ' hat' : '') + (d.shape === 'stack' ? ' stack' : '') + (d.shape === 'reporter' ? ' reporter' : '') + (d.shape === 'boolean' ? ' boolean' : '');
+    el.style.background = cat.color;
+    el.appendChild(labelParts(d, inst, sprite));
+  }
+  if (opts.palette){
+    el.draggable = true;
+    el.dataset.newDef = inst.def;
+    el.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('text/plain', JSON.stringify({ kind:'new', def: inst.def }));
+      e.dataTransfer.effectAllowed = 'copy';
+    });
+  } else if (!opts.mini){
+    el.draggable = true;
+    el.dataset.uid = inst.uid;
+    el.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('text/plain', JSON.stringify({ kind:'move', uid: inst.uid }));
+      e.dataTransfer.effectAllowed = 'move';
+      e.stopPropagation();
+    });
+  }
+  return el;
+}
+function labelParts(d, inst, sprite){
+  const frag = document.createDocumentFragment();
+  const parts = d.label.split(/(\{[^}]+\})/g);
+  for (const p of parts){
+    if (!p) continue;
+    const m = p.match(/^\{(.+)\}$/);
+    if (m){
+      const inp = (d.inputs || []).find(i => i.key === m[1]);
+      if (inp) frag.appendChild(inputControl(inp, inst, sprite));
+      else frag.appendChild(document.createTextNode(p));
+    } else frag.appendChild(document.createTextNode(p));
+  }
+  return frag;
+}
+function shade(hex){
+  const n = parseInt(hex.slice(1), 16);
+  const r = Math.max(0, ((n >> 16) & 255) - 34), g = Math.max(0, ((n >> 8) & 255) - 34), b = Math.max(0, (n & 255) - 34);
+  return '#' + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
+}
+function renderScripts(){
+  const area = $('codearea');
+  area.querySelectorAll('.script').forEach(el => el.remove());
+  const sprite = selectedSprite();
+  if (!sprite) return;
+  $('drop-hint').style.display = sprite.scripts.length ? 'none' : 'block';
+  for (const sc of sprite.scripts){
+    const wrap = document.createElement('div');
+    wrap.className = 'script';
+    wrap.dataset.scriptIdx = sprite.scripts.indexOf(sc);
+    wrap.style.left = sc.x + 'px'; wrap.style.top = sc.y + 'px';
+    for (const b of sc.blocks) wrap.appendChild(buildBlockEl(b, { sprite }));
+    area.appendChild(wrap);
+  }
+  markSlotTargets();
+}
+function markSlotTargets(){
+  /* wire drop targets: slots inside workspace blocks accept reporters.
+     C-block heads live inside the .cblk wrapper (which holds data-uid). */
+  $('codearea').querySelectorAll('[data-uid]').forEach(hostEl => {
+    const found = findBlock(hostEl.dataset.uid);
+    if (!found) return;
+    const d = DEFS[found.block.def];
+    const headEl = hostEl.classList.contains('cblk') ? hostEl.querySelector(':scope > .blk') : hostEl;
+    if (!headEl) return;
+    const slots = headEl.querySelectorAll(':scope > .slot');
+    let si = 0;
+    for (const inp of d.inputs || []){
+      if (inp.kind !== 'slot') continue;
+      const slotEl = slots[si++];
+      if (!slotEl) continue;
+      slotEl.dataset.slot = found.block.uid + ':' + inp.key;
+    }
+  });
+}
+function renderStage(){
+  const stage = $('stage');
+  stage.style.background = backdropCSS(project.backdrop);
+  const bd = BACKDROPS.find(b => b.name === project.backdrop);
+  stage.style.backgroundSize = bd && bd.name === 'Grid' ? '24px 24px' : '';
+  for (const s of project.sprites){
+    if (!s.el){
+      s.el = document.createElement('div');
+      s.el.className = 'sprite-el';
+      s.el.addEventListener('click', () => { runClickHats(s); });
+      stage.appendChild(s.el);
+      s.sayEl = document.createElement('div');
+      s.sayEl.className = 'saybubble hidden';
+      stage.appendChild(s.sayEl);
+    }
+    renderSprite(s);
+  }
+  /* remove elements of deleted sprites */
+  for (const el of [...stage.querySelectorAll('.sprite-el')]){
+    if (!project.sprites.some(s => s.el === el)) el.remove();
+  }
+  for (const el of [...stage.querySelectorAll('.saybubble')]){
+    if (!project.sprites.some(s => s.sayEl === el)) el.remove();
+  }
+}
+function renderSprite(s){
+  if (!s.el) return;
+  s.el.innerHTML = s.costumes[s.costume].svg();
+  s.el.style.display = s.visible ? 'block' : 'none';
+  s.el.style.left = (240 + s.x - 35) + 'px';
+  s.el.style.top = (180 - s.y - 35) + 'px';
+  s.el.style.transform = 'rotate(' + (s.dir - 90) + 'deg) scale(' + (s.size / 100) + ')';
+  s.el.classList.toggle('selected', selectedSprite() === s);
+  if (s.sayEl){
+    if (s.say){ s.sayEl.textContent = s.say; s.sayEl.classList.remove('hidden');
+      s.sayEl.style.left = (240 + s.x + 18) + 'px'; s.sayEl.style.top = (180 - s.y - 78) + 'px';
+    } else s.sayEl.classList.add('hidden');
+  }
+}
+function say(s, text){ s.say = text; renderSprite(s); }
+function backdropCSS(name){
+  const b = BACKDROPS.find(x => x.name === name);
+  if (!b) return '#fff';
+  if (b.name === 'Grid') return 'linear-gradient(#e0e0e0 1px, transparent 1px), linear-gradient(90deg, #e0e0e0 1px, transparent 1px), #ffffff';
+  return b.css;
+}
+function setBackdrop(name){ project.backdrop = name; renderStage(); renderBackdrops(); }
+function renderSpritesPane(){
+  const wrap = $('sprites'); wrap.innerHTML = '';
+  for (const s of project.sprites){
+    const tile = document.createElement('div');
+    tile.className = 'sprite-tile' + (selectedSprite() === s ? ' selected' : '');
+    const del = document.createElement('button'); del.textContent = '×'; del.title = 'Delete sprite';
+    del.onclick = e => { e.stopPropagation();
+      project.sprites = project.sprites.filter(p => p !== s);
+      if (!project.sprites.length) project.sprites.push(spriteOf('cat', 0, 0, []));
+      selectedId = project.sprites[0].id;
+      renderAll();
+    };
+    tile.appendChild(del);
+    const ic = document.createElement('span'); ic.className = 'ic'; ic.textContent = SPRITE_TYPES[s.type].icon;
+    tile.appendChild(ic);
+    const nm = document.createElement('div'); nm.textContent = s.name; tile.appendChild(nm);
+    tile.onclick = () => { selectedId = s.id; renderAll(); };
+    wrap.appendChild(tile);
+  }
+  for (const type of Object.keys(SPRITE_TYPES)){
+    const add = document.createElement('button');
+    add.className = 'sprite-tile';
+    add.innerHTML = '<span class="ic">' + SPRITE_TYPES[type].icon + '</span><div>+ ' + SPRITE_TYPES[type].name + '</div>';
+    add.onclick = () => { const ns = spriteOf(type, 0, 0, []); project.sprites.push(ns); selectedId = ns.id; renderAll(); };
+    wrap.appendChild(add);
+  }
+  const s = selectedSprite();
+  const info = $('sprite-info');
+  if (!s){ info.innerHTML = ''; return; }
+  info.innerHTML = '';
+  const mkNum = (label, get, set) => {
+    const lab = document.createElement('span'); lab.textContent = label;
+    const inp = document.createElement('input'); inp.type = 'number'; inp.value = Math.round(get());
+    inp.onchange = () => { set(num(inp.value)); renderSprite(s); };
+    info.appendChild(lab); info.appendChild(inp);
+  };
+  const nameInp = document.createElement('input'); nameInp.type = 'text'; nameInp.value = s.name; nameInp.style.width = '110px';
+  nameInp.onchange = () => { s.name = nameInp.value || s.name; renderAll(); };
+  const lab = document.createElement('span'); lab.textContent = 'Name';
+  info.appendChild(lab); info.appendChild(nameInp);
+  mkNum('x', () => s.x, v => { s.x = v; });
+  mkNum('y', () => s.y, v => { s.y = v; });
+  mkNum('size', () => s.size, v => { s.size = Math.max(10, v); });
+  mkNum('direction', () => s.dir, v => { s.dir = normDir(v); });
+  const sh = document.createElement('button'); sh.className = 'mbtn'; sh.style.cssText = 'background:#59c059;border-color:#59c059;color:#fff;padding:4px 10px';
+  sh.textContent = s.visible ? 'Hide' : 'Show';
+  sh.onclick = () => { s.visible = !s.visible; renderAll(); };
+  info.appendChild(sh);
+}
+function renderBackdrops(){
+  const wrap = $('backdrops'); wrap.innerHTML = '';
+  for (const b of BACKDROPS){
+    const d = document.createElement('div');
+    d.className = 'bd' + (project.backdrop === b.name ? ' selected' : '');
+    d.title = b.name; d.style.background = backdropCSS(b.name);
+    if (b.name === 'Grid') d.style.backgroundSize = '12px 12px';
+    d.onclick = () => setBackdrop(b.name);
+    wrap.appendChild(d);
+  }
+}
+function renderWatchers(){
+  const wrap = $('watchers'); wrap.innerHTML = '';
+  for (const [name, v] of Object.entries(project.vars)){
+    if (!v.shown) continue;
+    const chip = document.createElement('div'); chip.className = 'watcher';
+    chip.innerHTML = '';
+    const lab = document.createElement('span'); lab.textContent = name + ': ';
+    const val = document.createElement('b'); val.textContent = v.value;
+    chip.appendChild(lab); chip.appendChild(val);
+    wrap.appendChild(chip);
+  }
+}
+function renderCostumes(){
+  const list = $('costume-list'); list.innerHTML = '';
+  const s = selectedSprite(); if (!s) return;
+  s.costumes.forEach((c, i) => {
+    const item = document.createElement('div');
+    item.className = 'costume-item' + (s.costume === i ? ' selected' : '');
+    const prev = document.createElement('div'); prev.className = 'prev'; prev.innerHTML = c.svg();
+    const nm = document.createElement('div'); nm.innerHTML = '<b>' + c.name + '</b>';
+    item.appendChild(prev); item.appendChild(nm);
+    item.onclick = () => { s.costume = i; renderSprite(s); renderCostumes(); };
+    list.appendChild(item);
+  });
+  const h = document.createElement('div'); h.className = 'hint'; h.style.padding = '0 4px';
+  h.textContent = 'Use the Looks blocks to switch costumes in your scripts.';
+  list.appendChild(h);
+}
+function renderSounds(){
+  const list = $('sound-list'); list.innerHTML = '';
+  for (const name of SOUND_OPTIONS){
+    const item = document.createElement('div'); item.className = 'sound-item';
+    const nm = document.createElement('div'); nm.innerHTML = '<b>' + name + '</b>';
+    const play = document.createElement('button'); play.className = 'mbtn'; play.style.cssText = 'background:#cf63cf;border-color:#cf63cf;color:#fff';
+    play.textContent = '▶ Play';
+    play.onclick = () => playSound(name, false);
+    item.appendChild(nm); item.appendChild(play);
+    list.appendChild(item);
+  }
+}
+function renderAll(){
+  renderCatBar(); renderPalette(); renderScripts(); renderStage(); renderSpritesPane(); renderBackdrops(); renderWatchers(); renderCostumes(); renderSounds();
+  $('proj-name').value = project.name || '';
+}
+
+/* ================= FIND / DRAG & DROP ================= */
+function findBlock(uid){
+  for (const s of project.sprites) for (const sc of s.scripts){
+    const r = findInArr(sc.blocks, uid);
+    if (r) return r;
+  }
+  return null;
+}
+function findInArr(arr, uid){
+  for (let i = 0; i < arr.length; i++){
+    const b = arr[i];
+    if (b.uid === uid) return { arr, idx: i, block: b };
+    const k = findInArr(b.kids || [], uid); if (k) return k;
+    const k2 = findInArr(b.kids2 || [], uid); if (k2) return k2;
+  }
+  return null;
+}
+function setupDnD(){
+  const area = $('codearea');
+  area.addEventListener('dragover', e => { e.preventDefault(); });
+  area.addEventListener('drop', e => {
+    e.preventDefault();
+    let payload;
+    try { payload = JSON.parse(e.dataTransfer.getData('text/plain')); } catch (err) { return; }
+    if (!payload) return;
+    const sprite = selectedSprite();
+    /* slot drop (reporters only) */
+    const slotEl = e.target.closest('[data-slot]');
+    if (slotEl && payload.kind === 'new'){
+      const d = DEFS[payload.def];
+      if (d.shape === 'reporter' || d.shape === 'boolean'){
+        const [uid, key] = slotEl.dataset.slot.split(':');
+        const found = findBlock(uid);
+        if (found){
+          const inst = freshInstance(payload.def);
+          found.block.vals[key] = { rep: payload.def, vals: inst.vals };
+          renderScripts();
+        }
+        return;
+      }
+    }
+    /* resolve the moving unit */
+    let unit;
+    if (payload.kind === 'new'){
+      const d = DEFS[payload.def];
+      if (d.shape !== 'stack' && d.shape !== 'hat' && d.shape !== 'c') return;
+      unit = [freshInstance(payload.def)];
+    } else if (payload.kind === 'move'){
+      const found = findBlock(payload.uid);
+      if (!found) return;
+      unit = found.arr.splice(found.idx);
+    } else return;
+    /* body drop (inside a C-block) */
+    const bodyEl = e.target.closest('[data-body], [data-body2]');
+    if (bodyEl){
+      const host = findBlock(bodyEl.dataset.body || bodyEl.dataset.body2);
+      if (host){
+        const arr = bodyEl.dataset.body ? host.block.kids : host.block.kids2;
+        arr.push(...unit);
+        renderScripts(); return;
+      }
+    }
+    /* sibling drop: before/after the block under the cursor */
+    const hostEl = e.target.closest('[data-uid]');
+    if (hostEl){
+      const found = findBlock(hostEl.dataset.uid);
+      if (found){
+        const rect = hostEl.getBoundingClientRect();
+        const after = (e.clientY - rect.top) > rect.height / 2;
+        found.arr.splice(after ? found.idx + 1 : found.idx, 0, ...unit);
+        renderScripts(); return;
+      }
+    }
+    /* drop on an existing script's empty space: append to that script */
+    const scriptEl = e.target.closest('.script');
+    if (scriptEl && scriptEl.dataset.scriptIdx !== undefined){
+      const sc = sprite.scripts[Number(scriptEl.dataset.scriptIdx)];
+      if (sc){ sc.blocks.push(...unit); renderScripts(); return; }
+    }
+    /* background drop: new floating script */
+    const rect = area.getBoundingClientRect();
+    const x = Math.max(0, e.clientX - rect.left + area.scrollLeft - 8);
+    const y = Math.max(0, e.clientY - rect.top + area.scrollTop - 8);
+    sprite.scripts.push({ x, y, blocks: unit });
+    renderScripts();
+  });
+  const pal = $('palette');
+  pal.addEventListener('dragover', e => { e.preventDefault(); });
+  pal.addEventListener('drop', e => {
+    e.preventDefault();
+    let payload;
+    try { payload = JSON.parse(e.dataTransfer.getData('text/plain')); } catch (err) { return; }
+    if (payload && payload.kind === 'move'){
+      const found = findBlock(payload.uid);
+      if (found) found.arr.splice(found.idx); /* tail already removed at drop time? no: remove here */
+      renderScripts();
+      toast('Block deleted.');
+    }
+  });
+}
+
+/* ================= ENGINE ================= */
+function evalSlot(v, sprite){
+  if (v && typeof v === 'object' && v.rep){
+    const d = DEFS[v.rep]; if (!d) return 0;
+    const args = {};
+    for (const inp of d.inputs || []) Object.defineProperty(args, inp.key, { get: () => evalSlot(v.vals[inp.key], sprite) });
+    return d.expr(sprite, args);
+  }
+  return v;
+}
+function lazyArgs(b, sprite){
+  const args = {};
+  const d = DEFS[b.def];
+  for (const inp of d.inputs || []) Object.defineProperty(args, inp.key, { get: () => evalSlot(b.vals[inp.key], sprite) });
+  return args;
+}
+async function runStack(blocks, sprite, token){
+  for (const b of blocks){
+    if (token.dead) return;
+    const d = DEFS[b.def];
+    if (!d || d.shape === 'hat') continue;
+    const args = lazyArgs(b, sprite);
+    if (d.shape === 'c'){
+      const runKids = () => runStack(b.kids, sprite, token);
+      const runElse = () => runStack(b.kids2, sprite, token);
+      await d.run(sprite, args, token, runKids, runElse);
+    } else if (d.run){
+      await d.run(sprite, args, token);
+    }
+    renderSprite(sprite); renderWatchers();
+    await sleep(0, token);
+  }
+}
+function newToken(){ const t = { dead:false }; runTokens.add(t); return t; }
+function stopAll(){
+  for (const t of runTokens) t.dead = true;
+  runTokens.clear();
+  for (const s of project.sprites) say(s, '');
+  stopAllSounds();
+  $('askbar').classList.add('hidden');
+}
+function runHatScripts(kind, match){
+  for (const s of project.sprites) for (const sc of s.scripts){
+    const first = sc.blocks[0];
+    if (!first) continue;
+    const d = DEFS[first.def];
+    if (d && d.hat === kind && (!match || match(first, s))) runStack(sc.blocks, s, newToken());
+  }
+}
+function runClickHats(sprite){
+  for (const sc of sprite.scripts){
+    const first = sc.blocks[0];
+    if (first && DEFS[first.def].hat === 'click') runStack(sc.blocks, sprite, newToken());
+  }
+}
+function runKeyHats(key){
+  const k = key.length === 1 ? key.toLowerCase() : key;
+  runHatScripts('key', first => {
+    const opt = String(first.vals.key);
+    return opt === 'any' || keyToCode(opt) === k;
+  });
+}
+async function fireBroadcast(msg, wait, parentToken){
+  const runs = [];
+  for (const s of project.sprites) for (const sc of s.scripts){
+    const first = sc.blocks[0];
+    if (first && DEFS[first.def].hat === 'receive' && String(first.vals.msg) === msg) runs.push(runStack(sc.blocks, s, newToken()));
+  }
+  if (wait) await Promise.all(runs);
+}
+
+/* ================= SOUND (WebAudio, no files) ================= */
+let audioCtx = null;
+let activeSources = new Set();
+function ensureAudio(){
+  if (!audioCtx){ try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { audioCtx = null; } }
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+function blip(freqStart, freqEnd, dur, type, vol){
+  const ctx = ensureAudio(); if (!ctx) return 0;
+  const t0 = ctx.currentTime;
+  const osc = ctx.createOscillator(), gain = ctx.createGain();
+  osc.type = type || 'sine';
+  osc.frequency.setValueAtTime(freqStart, t0);
+  osc.frequency.exponentialRampToValueAtTime(Math.max(30, freqEnd), t0 + dur);
+  gain.gain.setValueAtTime(vol || 0.18, t0);
+  gain.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(t0); osc.stop(t0 + dur + 0.02);
+  activeSources.add(osc);
+  osc.onended = () => activeSources.delete(osc);
+  return dur;
+}
+async function playSound(name, wait, token){
+  let dur = 0.15;
+  if (name === 'Meow') dur = blip(720, 340, 0.45, 'sine', 0.2);
+  else if (name === 'Boing') dur = blip(140, 720, 0.35, 'sine', 0.2);
+  else dur = blip(760, 500, 0.09, 'square', 0.12);
+  if (wait) await sleep(dur * 1000, token);
+}
+function stopAllSounds(){
+  for (const osc of activeSources){ try { osc.stop(); } catch (e) {} }
+  activeSources.clear();
+}
+
+/* ================= ASK ================= */
+let askResolve = null;
+function askOnStage(q, token){
+  return new Promise(res => {
+    const bar = $('askbar'), inp = $('ask-input');
+    bar.classList.remove('hidden');
+    inp.value = ''; inp.placeholder = q;
+    setTimeout(() => inp.focus(), 30);
+    const done = val => { if (askResolve !== done) return; askResolve = null; bar.classList.add('hidden'); res(val); };
+    askResolve = done;
+    (function chk(){ if (token && token.dead) done(''); else if (askResolve === done) setTimeout(chk, 60); })();
+  });
+}
+
+/* ================= SAVE / LOAD / NEW ================= */
+function defaultProject(){
+  return { name:'', backdrop:'Blue Sky', vars:{}, sprites:[ spriteOf('cat', 0, 0, []) ] };
+}
+function serializeProject(){
+  return { app:'pixelblocks', name: project.name, backdrop: project.backdrop, vars: project.vars,
+    sprites: project.sprites.map(s => ({ type:s.type, name:s.name, x:s.x, y:s.y, dir:s.dir, size:s.size, visible:s.visible, costume:s.costume,
+      scripts: s.scripts.map(sc => ({ x:sc.x, y:sc.y, blocks: sc.blocks })) })) };
+}
+function loadProjectData(data){
+  if (!data || !Array.isArray(data.sprites)) return false;
+  const sprites = data.sprites.filter(s => SPRITE_TYPES[s.type]).map(s => {
+    const sp = spriteOf(s.type, num(s.x), num(s.y), []);
+    sp.name = s.name || sp.name; sp.dir = normDir(num(s.dir) || 90); sp.size = Math.max(10, num(s.size) || 100);
+    sp.visible = s.visible !== false; sp.costume = Math.min(sp.costumes.length - 1, Math.max(0, Math.round(num(s.costume)) || 0));
+    sp.scripts = (s.scripts || []).map(sc => ({ x: num(sc.x), y: num(sc.y), blocks: sc.blocks || [] }));
+    return sp;
+  });
+  if (!sprites.length) return false;
+  project = { name: data.name || '', backdrop: data.backdrop || 'Blue Sky', vars: data.vars || {}, sprites };
+  /* keep uid counter ahead of loaded uids */
+  const bump = arr => { for (const b of arr){ const n = parseInt(String(b.uid).slice(1), 10); if (!isNaN(n) && n >= _uid) _uid = n + 1; bump(b.kids || []); bump(b.kids2 || []); } };
+  for (const s of sprites) for (const sc of s.scripts) bump(sc.blocks);
+  selectedId = sprites[0].id;
+  return true;
+}
+function saveToComputer(){
+  const data = JSON.stringify(serializeProject(), null, 2);
+  const blob = new Blob([data], { type:'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (project.name || 'pixelblocks-project').replace(/[^\w\- ]+/g, '') + '.json';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  toast('Project saved to your computer.');
+}
+
+/* ================= VIEWS / HOME ================= */
+function renderHome(){
+  const cards = $('featured-cards'); cards.innerHTML = '';
+  for (const smp of SAMPLES){
+    const card = document.createElement('button'); card.className = 'card';
+    const thumb = document.createElement('div'); thumb.className = 'thumb'; thumb.style.background = smp.bg; thumb.textContent = smp.emoji;
+    const meta = document.createElement('div'); meta.className = 'meta';
+    meta.innerHTML = '<b></b><span></span>';
+    meta.querySelector('b').textContent = smp.title;
+    meta.querySelector('span').textContent = 'by ' + smp.author + ' · click to open in the editor';
+    card.appendChild(thumb); card.appendChild(meta);
+    card.onclick = () => {
+      const data = smp.build();
+      project = { name: smp.title, backdrop: data.backdrop, vars: data.vars, sprites: data.sprites };
+      selectedId = project.sprites[0].id;
+      showEditor();
+      toast('Loaded "' + smp.title + '" — click ▶ to run it.');
+    };
+    cards.appendChild(card);
+  }
+  const st = $('featured-studios'); st.innerHTML = '';
+  for (const name of STUDIOS){
+    const b = document.createElement('button'); b.className = 'studio'; b.textContent = name;
+    b.onclick = () => toast('Studios are not open yet — the editor is where the fun is.');
+    st.appendChild(b);
+  }
+}
+/* The editor lives at /create (create/index.html is a copy of this file).
+   On a real site, Create buttons navigate there for real; opened as a plain
+   file, the same file just switches views. #create works as a fallback. */
+function isHttp(){ return typeof location !== 'undefined' && location.protocol.indexOf('http') === 0; }
+function isCreatePath(){
+  if (typeof location === 'undefined') return false;
+  return /\/create\/?$/.test(location.pathname) || location.hash === '#create';
+}
+function goCreate(){
+  if (isHttp() && !isCreatePath()) location.href = 'create/';
+  else showEditor();
+}
+function goHome(){
+  if (isHttp() && isCreatePath()) location.href = '../';
+  else showHome();
+}
+function showEditor(){
+  $('home-view').classList.add('hidden');
+  $('editor-view').classList.remove('hidden');
+  renderAll();
+}
+function showHome(){
+  stopAll();
+  $('editor-view').classList.add('hidden');
+  $('home-view').classList.remove('hidden');
+  renderHome();
+}
+function switchTab(tab){
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  $('tab-code').classList.toggle('hidden', tab !== 'code');
+  $('tab-costumes').classList.toggle('hidden', tab !== 'costumes');
+  $('tab-sounds').classList.toggle('hidden', tab !== 'sounds');
+  if (tab === 'costumes') renderCostumes();
+  if (tab === 'sounds') renderSounds();
+}
+
+/* ================= WIRING ================= */
+function bindUI(){
+  $('logo-home').onclick = goHome;
+  $('logo-editor').onclick = goHome;
+  $('nav-create').onclick = goCreate;
+  $('hero-create').onclick = goCreate;
+  $('nav-explore').onclick = () => document.querySelector('.section').scrollIntoView({ behavior:'smooth' });
+  $('nav-ideas').onclick = () => toast('Ideas live in the editor — drag some blocks and see what happens.');
+  $('nav-about').onclick = () => toast('PixelBlocks: an original block-coding playground, inspired by Scratch.');
+  $('nav-signin').onclick = () => toast('Accounts are not on yet — your projects save to your computer.');
+  $('nav-join').onclick = () => toast('Accounts are not on yet — just click Start Creating.');
+  $('hero-join').onclick = () => toast('Accounts are not on yet — just click Start Creating.');
+  $('studio-go').onclick = goCreate;
+  $('btn-home').onclick = goHome;
+  $('btn-share').onclick = () => toast('Sharing is not on yet — use Save to computer to keep your project.');
+  $('btn-flag').onclick = () => { stopAll(); runHatScripts('flag'); };
+  $('btn-stop').onclick = () => { stopAll(); toast('Stopped.'); };
+  $('btn-new').onclick = () => {
+    if (confirm('Start a new empty project? Unsaved work will be lost.')){
+      stopAll(); project = defaultProject(); selectedId = project.sprites[0].id; renderAll();
+    }
+  };
+  $('btn-save').onclick = saveToComputer;
+  $('btn-load').onclick = () => $('file-load').click();
+  $('file-load').addEventListener('change', e => {
+    const f = e.target.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      try { const data = JSON.parse(r.result);
+        if (loadProjectData(data)){ stopAll(); renderAll(); toast('Project loaded.'); }
+        else toast('That file does not look like a PixelBlocks project.');
+      } catch (err) { toast('Could not read that file.'); }
+    };
+    r.readAsText(f);
+    e.target.value = '';
+  });
+  $('proj-name').addEventListener('input', e => { project.name = e.target.value; });
+  document.querySelectorAll('.tab').forEach(t => t.onclick = () => switchTab(t.dataset.tab));
+  $('ask-ok').onclick = () => { if (askResolve) askResolve($('ask-input').value); };
+  $('ask-input').addEventListener('keydown', e => { if (e.key === 'Enter' && askResolve) askResolve(e.target.value); });
+  const stage = $('stage');
+  stage.addEventListener('mousemove', e => {
+    const r = stage.getBoundingClientRect();
+    mouse.x = Math.round((e.clientX - r.left) / r.width * 480 - 240);
+    mouse.y = Math.round(180 - (e.clientY - r.top) / r.height * 360);
+    $('stage-coords').textContent = 'x: ' + mouse.x + ' y: ' + mouse.y;
+  });
+  stage.addEventListener('mousedown', () => { mouse.down = true; });
+  window.addEventListener('mouseup', () => { mouse.down = false; });
+  window.addEventListener('keydown', e => {
+    if (e.target.matches('input, select, textarea')) return;
+    keysDown.add(e.key);
+    if (!e.repeat) runKeyHats(e.key);
+  });
+  window.addEventListener('keyup', e => keysDown.delete(e.key));
+  window.addEventListener('hashchange', () => { if (isCreatePath()) showEditor(); else showHome(); });
+}
+
+/* ================= INIT ================= */
+project = defaultProject();
+selectedId = project.sprites[0].id;
+setupDnD();
+bindUI();
+if (isCreatePath()) showEditor(); else showHome();
+</script>
+</body>
+</html>
