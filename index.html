@@ -130,6 +130,18 @@
   .script > *:last-child.hat { border-radius:22px 22px 6px 6px; }
   .script .cblk:last-child .cblk-foot { border-radius:0 0 6px 6px; }
   .toast { position:fixed; left:50%; bottom:26px; transform:translateX(-50%); background:#333; color:#fff; padding:10px 18px; border-radius:22px; font-size:14px; z-index:200; box-shadow:0 4px 16px rgba(0,0,0,.3); }
+  /* ---------- pointer dragging ---------- */
+  .blk { touch-action:none; }
+  .sprite-el { touch-action:none; }
+  .drag-ghost { position:fixed; z-index:1000; pointer-events:none; opacity:.88; filter:drop-shadow(0 6px 10px rgba(0,0,0,.35)); display:flex; flex-direction:column; }
+  .drag-ghost .blk, .drag-ghost .cblk { box-shadow:none; }
+  .drop-line { position:absolute; height:4px; background:#4c97ff; border-radius:2px; z-index:60; pointer-events:none; box-shadow:0 0 0 1px rgba(255,255,255,.7); }
+  .slot.drop-ok { outline:2px solid #4c97ff !important; outline-offset:1px; }
+  .cblk-body.drop-ok { outline:2px dashed #fff; outline-offset:-3px; }
+  .palette.delete-armed { outline:2px dashed #e74c3c; outline-offset:-5px; }
+  #palette-delete-hint { background:#fdecea; color:#c0392b; font-size:13px; font-weight:700; text-align:center; padding:8px; border-bottom:1px solid #f5c6c0; }
+  body.dragging, body.dragging * { cursor:grabbing !important; }
+  .drag-source { opacity:.35 !important; }
   @media (max-width: 900px) {
     .editor { flex-direction:column; height:auto; }
     .leftcol, .rightcol { width:100%; max-width:none; }
@@ -208,6 +220,7 @@
       </div>
       <div id="tab-code">
         <div class="catbar" id="catbar"></div>
+        <div id="palette-delete-hint" class="hidden">🗑 Release here to delete the block</div>
         <div class="palette" id="palette"></div>
       </div>
       <div id="tab-costumes" class="hidden">
@@ -221,6 +234,7 @@
     <div class="workcol">
       <div class="codearea" id="codearea">
         <div class="drop-hint" id="drop-hint">Drag blocks here to build a script. Drag a block back to the left to delete it.</div>
+        <div class="drop-line hidden" id="drop-line"></div>
       </div>
     </div>
 
@@ -668,20 +682,11 @@ function buildBlockEl(inst, opts){
     el.appendChild(labelParts(d, inst, sprite));
   }
   if (opts.palette){
-    el.draggable = true;
     el.dataset.newDef = inst.def;
-    el.addEventListener('dragstart', e => {
-      e.dataTransfer.setData('text/plain', JSON.stringify({ kind:'new', def: inst.def }));
-      e.dataTransfer.effectAllowed = 'copy';
-    });
+    el.addEventListener('pointerdown', e => startBlockDrag(e, { kind:'new', def: inst.def }, el));
   } else if (!opts.mini){
-    el.draggable = true;
     el.dataset.uid = inst.uid;
-    el.addEventListener('dragstart', e => {
-      e.dataTransfer.setData('text/plain', JSON.stringify({ kind:'move', uid: inst.uid }));
-      e.dataTransfer.effectAllowed = 'move';
-      e.stopPropagation();
-    });
+    el.addEventListener('pointerdown', e => startBlockDrag(e, { kind:'move', uid: inst.uid }, el));
   }
   return el;
 }
@@ -748,7 +753,6 @@ function renderStage(){
     if (!s.el){
       s.el = document.createElement('div');
       s.el.className = 'sprite-el';
-      s.el.addEventListener('click', () => { runClickHats(s); });
       stage.appendChild(s.el);
       s.sayEl = document.createElement('div');
       s.sayEl.className = 'saybubble hidden';
@@ -908,87 +912,192 @@ function findInArr(arr, uid){
   }
   return null;
 }
-function setupDnD(){
+/* ================= POINTER DRAGGING ================= */
+/* Drag blocks with the pointer (mouse + touch): a live ghost follows the
+   cursor, a blue line shows exactly where the block will land, C-block
+   mouths and slots highlight, and dropping on the palette deletes. */
+function startBlockDrag(e, payload, el){
+  if (e.button !== undefined && e.button > 0) return;
+  if (e.target.closest && e.target.closest('input, select, textarea, button')) return;
+  e.stopPropagation();
+  e.preventDefault();
+  const startX = e.clientX, startY = e.clientY;
+  const rect = el.getBoundingClientRect();
+  const grabDX = startX - rect.left, grabDY = startY - rect.top;
   const area = $('codearea');
-  area.addEventListener('dragover', e => { e.preventDefault(); });
-  area.addEventListener('drop', e => {
-    e.preventDefault();
-    let payload;
-    try { payload = JSON.parse(e.dataTransfer.getData('text/plain')); } catch (err) { return; }
-    if (!payload) return;
-    const sprite = selectedSprite();
-    /* slot drop (reporters only) */
-    const slotEl = e.target.closest('[data-slot]');
-    if (slotEl && payload.kind === 'new'){
-      const d = DEFS[payload.def];
-      if (d.shape === 'reporter' || d.shape === 'boolean'){
-        const [uid, key] = slotEl.dataset.slot.split(':');
-        const found = findBlock(uid);
-        if (found){
-          const inst = freshInstance(payload.def);
-          found.block.vals[key] = { rep: payload.def, vals: inst.vals };
-          renderScripts();
-        }
-        return;
+  let ghost = null, sourceEls = [], active = false;
+  const move = ev => {
+    if (!active){
+      if (Math.abs(ev.clientX - startX) + Math.abs(ev.clientY - startY) < 5) return;
+      active = true;
+      document.body.classList.add('dragging');
+      sourceEls = [el];
+      if (payload.kind === 'move'){
+        let sib = el.nextElementSibling;
+        while (sib){ sourceEls.push(sib); sib = sib.nextElementSibling; }
+        sourceEls.forEach(n => n.classList.add('drag-source'));
       }
+      ghost = document.createElement('div');
+      ghost.className = 'drag-ghost';
+      ghost.style.width = rect.width + 'px';
+      for (const n of sourceEls){ const c = n.cloneNode(true); c.style.margin = '0'; ghost.appendChild(c); }
+      document.body.appendChild(ghost);
     }
-    /* resolve the moving unit */
-    let unit;
-    if (payload.kind === 'new'){
-      const d = DEFS[payload.def];
-      if (d.shape !== 'stack' && d.shape !== 'hat' && d.shape !== 'c') return;
-      unit = [freshInstance(payload.def)];
-    } else if (payload.kind === 'move'){
-      const found = findBlock(payload.uid);
-      if (!found) return;
-      unit = found.arr.splice(found.idx);
-    } else return;
-    /* body drop (inside a C-block) */
-    const bodyEl = e.target.closest('[data-body], [data-body2]');
-    if (bodyEl){
-      const host = findBlock(bodyEl.dataset.body || bodyEl.dataset.body2);
-      if (host){
-        const arr = bodyEl.dataset.body ? host.block.kids : host.block.kids2;
-        arr.push(...unit);
-        renderScripts(); return;
-      }
+    ghost.style.left = (ev.clientX - grabDX) + 'px';
+    ghost.style.top = (ev.clientY - grabDY) + 'px';
+    updateDragFeedback(ev, payload, area);
+    const ar = area.getBoundingClientRect();
+    if (ev.clientX > ar.left && ev.clientX < ar.right){
+      if (ev.clientY < ar.top + 36) area.scrollTop -= 9;
+      else if (ev.clientY > ar.bottom - 36) area.scrollTop += 9;
     }
-    /* sibling drop: before/after the block under the cursor */
-    const hostEl = e.target.closest('[data-uid]');
-    if (hostEl){
-      const found = findBlock(hostEl.dataset.uid);
-      if (found){
-        const rect = hostEl.getBoundingClientRect();
-        const after = (e.clientY - rect.top) > rect.height / 2;
-        found.arr.splice(after ? found.idx + 1 : found.idx, 0, ...unit);
-        renderScripts(); return;
-      }
+  };
+  const up = ev => {
+    window.removeEventListener('pointermove', move);
+    window.removeEventListener('pointerup', up);
+    window.removeEventListener('pointercancel', up);
+    if (active){
+      const target = targetFromPoint(ev.clientX, ev.clientY, payload);
+      resolveDrop(payload, target, ev, area, grabDX, grabDY);
     }
-    /* drop on an existing script's empty space: append to that script */
-    const scriptEl = e.target.closest('.script');
-    if (scriptEl && scriptEl.dataset.scriptIdx !== undefined){
-      const sc = sprite.scripts[Number(scriptEl.dataset.scriptIdx)];
-      if (sc){ sc.blocks.push(...unit); renderScripts(); return; }
+    clearDragFeedback();
+    if (ghost) ghost.remove();
+    sourceEls.forEach(n => n.classList.remove('drag-source'));
+    document.body.classList.remove('dragging');
+  };
+  window.addEventListener('pointermove', move);
+  window.addEventListener('pointerup', up);
+  window.addEventListener('pointercancel', up);
+}
+function clearDragFeedback(){
+  document.querySelectorAll('.drop-ok').forEach(n => n.classList.remove('drop-ok'));
+  $('palette').classList.remove('delete-armed');
+  $('palette-delete-hint').classList.add('hidden');
+  $('drop-line').classList.add('hidden');
+}
+function targetFromPoint(x, y, payload){
+  const under = document.elementFromPoint(x, y);
+  if (!under || !under.closest) return { type:'none' };
+  const slotEl = under.closest('[data-slot]');
+  if (slotEl && payload.kind === 'new'){
+    const d = DEFS[payload.def];
+    if (d.shape === 'reporter' || d.shape === 'boolean') return { type:'slot', el:slotEl };
+  }
+  if (under.closest('#palette, #catbar, #palette-delete-hint')){
+    if (payload.kind === 'move') return { type:'delete' };
+    return { type:'none' };
+  }
+  const bodyEl = under.closest('[data-body], [data-body2]');
+  const blkEl = under.closest('[data-uid]');
+  if (bodyEl && blkEl){
+    const hostUid = bodyEl.dataset.body || bodyEl.dataset.body2;
+    if (blkEl.dataset.uid !== hostUid){
+      const r = blkEl.getBoundingClientRect();
+      return { type:'sibling', uid:blkEl.dataset.uid, after: y > r.top + r.height / 2, el:blkEl };
     }
-    /* background drop: new floating script */
-    const rect = area.getBoundingClientRect();
-    const x = Math.max(0, e.clientX - rect.left + area.scrollLeft - 8);
-    const y = Math.max(0, e.clientY - rect.top + area.scrollTop - 8);
-    sprite.scripts.push({ x, y, blocks: unit });
-    renderScripts();
-  });
-  const pal = $('palette');
-  pal.addEventListener('dragover', e => { e.preventDefault(); });
-  pal.addEventListener('drop', e => {
-    e.preventDefault();
-    let payload;
-    try { payload = JSON.parse(e.dataTransfer.getData('text/plain')); } catch (err) { return; }
-    if (payload && payload.kind === 'move'){
-      const found = findBlock(payload.uid);
-      if (found) found.arr.splice(found.idx); /* tail already removed at drop time? no: remove here */
+    return { type:'body', el:bodyEl };
+  }
+  if (bodyEl) return { type:'body', el:bodyEl };
+  if (blkEl){
+    const r = blkEl.getBoundingClientRect();
+    return { type:'sibling', uid:blkEl.dataset.uid, after: y > r.top + r.height / 2, el:blkEl };
+  }
+  if (under.closest('#codearea')) return { type:'canvas', x, y };
+  return { type:'none' };
+}
+function updateDragFeedback(ev, payload, area){
+  clearDragFeedback();
+  const target = targetFromPoint(ev.clientX, ev.clientY, payload);
+  if (target.type === 'slot') target.el.classList.add('drop-ok');
+  else if (target.type === 'body') target.el.classList.add('drop-ok');
+  else if (target.type === 'delete'){
+    $('palette').classList.add('delete-armed');
+    $('palette-delete-hint').classList.remove('hidden');
+  }
+  else if (target.type === 'sibling'){
+    const line = $('drop-line');
+    const ar = area.getBoundingClientRect();
+    const r = target.el.getBoundingClientRect();
+    line.style.left = (r.left - ar.left + area.scrollLeft) + 'px';
+    line.style.width = r.width + 'px';
+    line.style.top = ((target.after ? r.bottom : r.top) - ar.top + area.scrollTop - 2) + 'px';
+    line.classList.remove('hidden');
+  }
+}
+function resolveDrop(payload, target, ev, area, grabDX, grabDY){
+  if (!target || target.type === 'none') return;
+  if (target.type === 'slot'){
+    const parts = target.el.dataset.slot.split(':');
+    const found = findBlock(parts[0]);
+    if (found){
+      const inst = freshInstance(payload.def);
+      found.block.vals[parts[1]] = { rep: payload.def, vals: inst.vals };
       renderScripts();
-      toast('Block deleted.');
     }
+    return;
+  }
+  if (payload.kind === 'new' && target.type === 'delete') return;
+  const sprite = selectedSprite();
+  let unit;
+  if (payload.kind === 'new'){
+    const d = DEFS[payload.def];
+    if (d.shape !== 'stack' && d.shape !== 'hat' && d.shape !== 'c') return;
+    unit = [freshInstance(payload.def)];
+  } else {
+    const found = findBlock(payload.uid);
+    if (!found) return;
+    unit = found.arr.splice(found.idx);
+  }
+  if (target.type === 'delete'){ renderScripts(); toast('Block deleted.'); return; }
+  if (target.type === 'body'){
+    const hostUid = target.el.dataset.body || target.el.dataset.body2;
+    const host = findBlock(hostUid);
+    if (!host) sprite.scripts.push({ x:40, y:40, blocks:unit });
+    else if (target.el.dataset.body) host.block.kids.push(...unit);
+    else host.block.kids2.push(...unit);
+    renderScripts(); return;
+  }
+  if (target.type === 'sibling'){
+    const found = findBlock(target.uid);
+    if (!found){ sprite.scripts.push({ x:40, y:40, blocks:unit }); renderScripts(); return; }
+    found.arr.splice(target.after ? found.idx + 1 : found.idx, 0, ...unit);
+    renderScripts(); return;
+  }
+  const ar = area.getBoundingClientRect();
+  const x = Math.max(0, ev.clientX - grabDX - ar.left + area.scrollLeft);
+  const y = Math.max(0, ev.clientY - grabDY - ar.top + area.scrollTop);
+  sprite.scripts.push({ x, y, blocks:unit });
+  renderScripts();
+}
+function setupStageDrag(){
+  const stage = $('stage');
+  stage.addEventListener('pointerdown', e => {
+    const el = e.target.closest ? e.target.closest('.sprite-el') : null;
+    if (!el) return;
+    const s = project.sprites.find(p => p.el === el);
+    if (!s) return;
+    const rect = stage.getBoundingClientRect();
+    const startX = e.clientX, startY = e.clientY;
+    const px0 = (startX - rect.left) / rect.width * 480 - 240;
+    const py0 = 180 - (startY - rect.top) / rect.height * 360;
+    const ox = s.x - px0, oy = s.y - py0;
+    let moved = false;
+    const move = ev => {
+      const px = (ev.clientX - rect.left) / rect.width * 480 - 240;
+      const py = 180 - (ev.clientY - rect.top) / rect.height * 360;
+      if (!moved && Math.abs(ev.clientX - startX) + Math.abs(ev.clientY - startY) > 6) moved = true;
+      if (moved){ s.x = px + ox; s.y = py + oy; clampSprite(s); renderSprite(s); }
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+      if (!moved) runClickHats(s);
+      else renderSpritesPane();
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
   });
 }
 
@@ -1273,7 +1382,7 @@ function bindUI(){
 /* ================= INIT ================= */
 project = defaultProject();
 selectedId = project.sprites[0].id;
-setupDnD();
+setupStageDrag();
 bindUI();
 if (isCreatePath()) showEditor(); else showHome();
 </script>
